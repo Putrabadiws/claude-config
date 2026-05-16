@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.9.xsd">
+
+    <changeSet id="{{TICKET_ID}}-{{DESCRIPTION}}" author="{{AUTHOR}}">
+        <comment>{{DESCRIPTION}}</comment>
+
+        <!-- Example: Create table -->
+        <createTable tableName="{{TABLE_NAME}}">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="TIMESTAMP"/>
+            <column name="created_by" type="UUID"/>
+            <column name="is_active" type="BOOLEAN" defaultValueBoolean="true"/>
+        </createTable>
+
+        <!-- Example: Add column -->
+        <!--
+        <addColumn tableName="{{TABLE_NAME}}">
+            <column name="{{COLUMN_NAME}}" type="{{TYPE}}">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+        -->
+
+        <!-- Example: Add index -->
+        <!--
+        <createIndex indexName="idx_{{TABLE}}_{{COLUMN}}" tableName="{{TABLE}}">
+            <column name="{{COLUMN}}"/>
+        </createIndex>
+        -->
+
+        <!-- Example: Add foreign key -->
+        <!--
+        <addForeignKeyConstraint
+            baseTableName="{{TABLE}}"
+            baseColumnNames="{{COLUMN}}"
+            constraintName="fk_{{TABLE}}_{{REF_TABLE}}"
+            referencedTableName="{{REF_TABLE}}"
+            referencedColumnNames="id"/>
+        -->
+
+        <rollback>
+            <dropTable tableName="{{TABLE_NAME}}"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

@@ -1,0 +1,11 @@
+.DS_Store
+history.jsonl
+stats-cache.json
+debug/
+projects/
+cache/
+todos/
+file-history/
+plugins/
+settings.local.json
+.remember/

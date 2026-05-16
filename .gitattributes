@@ -1,0 +1,5 @@
+# Force LF line endings for all shell scripts and text configs
+# Prevents CRLF issues when checked out on Windows (Git Bash)
+*.sh text eol=lf
+*.md text eol=lf
+*.json text eol=lf
