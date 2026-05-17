@@ -53,7 +53,7 @@ fi
 # (legacy form still present in attribution.commit/pr settings). Substitution is gated to
 # commit/MR/PR commands above, so it's safe to rewrite {version}/{model} without false positives.
 if echo "$COMMAND" | grep -qE '\{\{claude-code-version\}\}|\{\{claude-model\}\}|\{version\}|\{model\}'; then
-  # Deterministic replacement via updatedInput — handle both placeholder dialects
+  # Branch A — placeholders present: replace via updatedInput
   MODIFIED=$(echo "$COMMAND" \
     | sed "s/{{claude-code-version}}/$VERSION/g" \
     | sed "s/{{claude-model}}/$MODEL/g" \
@@ -67,12 +67,37 @@ if echo "$COMMAND" | grep -qE '\{\{claude-code-version\}\}|\{\{claude-model\}\}|
       "additionalContext": ("Claude Code version: " + $v + " | Model: " + $m)
     }
   }'
+
+elif echo "$COMMAND" | grep -q '✨ Generated with Claude Code'; then
+  # Branch B — attribution line present (manual substitution); verify version+model match
+  ATTR_LINE=$(echo "$COMMAND" | grep -oE '✨ Generated with Claude Code \(claude\.ai/claude-code\) [^ ]+ \([^)]+\)' | head -1)
+  ATTR_VER=$(echo "$ATTR_LINE" | sed -E 's|.*\(claude\.ai/claude-code\) ([^ ]+) \(.*|\1|')
+  ATTR_MODEL=$(echo "$ATTR_LINE" | sed -E 's|.*\(([^)]+)\)$|\1|')
+
+  if [ -n "$ATTR_VER" ] && [ -n "$ATTR_MODEL" ] && [ "$ATTR_VER" = "$VERSION" ] && [ "$ATTR_MODEL" = "$MODEL" ]; then
+    # Correct manual substitution — no scolding, just emit context
+    jq -n --arg v "$VERSION" --arg m "$MODEL" '{
+      "hookSpecificOutput": {
+        "hookEventName": "PreToolUse",
+        "additionalContext": ("Claude Code version: " + $v + " | Model: " + $m)
+      }
+    }'
+  else
+    # Wrong values or parse failure (treated as mismatch — safer)
+    jq -n --arg v "$VERSION" --arg m "$MODEL" --arg av "${ATTR_VER:-?}" --arg am "${ATTR_MODEL:-?}" '{
+      "hookSpecificOutput": {
+        "hookEventName": "PreToolUse",
+        "additionalContext": ("ATTRIBUTION MISMATCH: commit has version=" + $av + ", model=" + $am + " — real values are version=" + $v + ", model=" + $m + ". You MUST amend (or follow-up commit if already pushed) with the correct line: ✨ Generated with Claude Code (claude.ai/claude-code) " + $v + " (" + $m + ")")
+      }
+    }'
+  fi
+
 else
-  # No placeholders — just provide context so Claude uses correct values next time
+  # Branch C — no attribution at all; emit IMPORTANT note with resolved content
   jq -n --arg v "$VERSION" --arg m "$MODEL" '{
     "hookSpecificOutput": {
       "hookEventName": "PreToolUse",
-      "additionalContext": ("IMPORTANT: The correct attribution line is: ✨ Generated with Claude Code (claude.ai/claude-code) " + $v + " (" + $m + ") — Use {{claude-code-version}} and {{claude-model}} placeholders (or legacy {version}/{model}); both are replaced automatically in git commit and gh pr commands.")
+      "additionalContext": ("IMPORTANT: attribution line missing. Add to commit body: ✨ Generated with Claude Code (claude.ai/claude-code) " + $v + " (" + $m + ")")
     }
   }'
 fi
