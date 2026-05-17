@@ -5,7 +5,13 @@
     "pr": "✨ Generated with Claude Code (claude.ai/claude-code) {version} ({model})"
   },
   "env": {
-    "CLAUDE_CODE_ENABLE_TELEMETRY": false
+    "CLAUDE_CODE_ENABLE_TELEMETRY": false,
+    "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1",
+    "DISABLE_TELEMETRY": "1",
+    "DO_NOT_TRACK": "1",
+    "CLAUDE_CODE_DISABLE_FEEDBACK_SURVEY": "1",
+    "DISABLE_ERROR_REPORTING": "1",
+    "DISABLE_FEEDBACK_COMMAND": "1"
   },
   "permissions": {
     "default": "ask",
