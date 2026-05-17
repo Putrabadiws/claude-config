@@ -13,8 +13,10 @@ source "$(dirname "$0")/path-bootstrap.sh"
 INPUT=$(cat)
 COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // empty')
 
-# Only intercept commit/PR creation commands
-if ! echo "$COMMAND" | grep -qE '(git\s+commit|gh\s+pr\s+(create|edit|comment))'; then
+# Only intercept commit/MR/PR creation commands.
+# Anchor verbs to sub-command start to avoid false positives on substrings
+# inside argument text (e.g. `grep "glab mr create" file.txt`).
+if ! echo "$COMMAND" | grep -qE '(^|&&|;|[|]+|\n)\s*(git\s+commit|glab\s+mr\s+(create|update)|gh\s+pr\s+(create|edit|comment))'; then
   exit 0
 fi
 

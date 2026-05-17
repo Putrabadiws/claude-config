@@ -1,4 +1,5 @@
 #!/bin/bash
+# SYNC:LOCAL-ONLY  — Bangor-team-specific hook; do not sync to ib or other repos.
 # Inject Burger Bangor business context when working in any repo under the
 # Bangor-Group-Indonesia GitHub org. Detection is via `git remote` on the cd
 # target (or current cwd if no cd), so any checkout location works.

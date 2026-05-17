@@ -44,11 +44,14 @@ Determine the environment:
 
 **Config mapping** (use throughout):
 
-| ENV | Settings file | Shell rule | Notes |
-|-----|--------------|------------|-------|
-| `macos`, `linux` | `settings-macos.json` | `shell-macos.md` | |
-| `wsl` | `settings-windows.json` | `shell-macos.md` | Linux paths, but may access `/mnt/c/` |
-| `gitbash`, `cygwin` | `settings-windows.json` | `shell-windows.md` | Hooks need `bash` in PATH |
+| ENV | Settings file | Placeholder substitution | Shell rule | Notes |
+|-----|--------------|--------------------------|------------|-------|
+| `macos`, `linux`, `wsl` | `settings.json` | drop `<bash for windows only>` | `shell-macos.md` | hooks run directly |
+| `gitbash`, `cygwin` | `settings.json` | replace `<bash for windows only>` with `bash ` | `shell-windows.md` | hooks invoked via Git Bash |
+
+The single `config/settings.json` is shared across all OSes. Hook commands carry the literal placeholder `<bash for windows only>` which the install step substitutes per OS via `sed`:
+- macOS / Linux / WSL: `sed 's/<bash for windows only>//g' config/settings.json > ~/.claude/settings.json`
+- Windows (Git Bash): `sed 's/<bash for windows only>/bash /g' config/settings.json > ~/.claude/settings.json`
 
 ## Step 1: Get Workspace Location
 
@@ -111,18 +114,19 @@ For "merge" mode: walk through each shared file and present a per-file decision 
 
 ### Files to install
 
-| Source (in `config/`) | Destination |
-|-----------------------|-------------|
-| `CLAUDE.md` | `~/.claude/CLAUDE.md` |
-| `settings-<os>.json` | `~/.claude/settings.json` |
-| `statusline.sh` | `~/.claude/statusline.sh` |
-| `mcp-figma.sh` | `~/.claude/mcp-figma.sh` (optional) |
-| `mcp-gdrive.sh` | `~/.claude/mcp-gdrive.sh` (optional) |
-| `agents/` | `~/.claude/agents/` |
-| `hooks/` | `~/.claude/hooks/` |
-| `skills/` | `~/.claude/skills/` |
-| `rules/` (filter shell-*) | `~/.claude/rules/` |
-| `claude-find*.{sh,py}`, `claude-resume.py` | `~/.claude/` |
+| Source | Destination | Notes |
+|--------|-------------|-------|
+| `config/CLAUDE.md` | `~/.claude/CLAUDE.md` | |
+| `config/settings.json` (with `<bash for windows only>` substituted per OS) | `~/.claude/settings.json` | |
+| `config/statusline.sh` | `~/.claude/statusline.sh` | |
+| `config/_lib/` | `~/.claude/_lib/` | Shared test helpers + compat wrappers |
+| `config/agents/` | `~/.claude/agents/` | |
+| `config/hooks/` | `~/.claude/hooks/` | |
+| `config/skills/` | `~/.claude/skills/` | |
+| `config/rules/` (filter shell-*) | `~/.claude/rules/` | |
+| `config/claude-find*.{sh,py}`, `config/claude-resume.py` | `~/.claude/` | |
+| `mcp/figma/mcp-figma.sh` + `mcp/figma/figma.env.sample` | `~/.claude/mcp/figma/` | Mirrored install; launcher self-resolves env (optional, consent-gated) |
+| `mcp/gdrive/mcp-gdrive.sh` | `~/.claude/mcp/gdrive/` | Mirrored install; OAuth files co-located here (optional, consent-gated) |
 
 For `rules/`, copy all `.md` except the OS-specific one that doesn't match. E.g. on macOS, remove `shell-windows.md`.
 
@@ -152,9 +156,9 @@ options:
 ```
 
 If yes:
-- macOS: `sudo cp config/managed-settings-macos.json "/Library/Application Support/ClaudeCode/managed-settings.json"`
-- Linux/WSL: `sudo cp config/managed-settings-macos.json /etc/claude-code/managed-settings.json`
-- Windows: copy `config/managed-settings-windows.json` to `%PROGRAMDATA%\ClaudeCode\managed-settings.json` (admin shell)
+- macOS: `sudo cp config/managed-settings.json "/Library/Application Support/ClaudeCode/managed-settings.json"`
+- Linux/WSL: `sudo cp config/managed-settings.json /etc/claude-code/managed-settings.json`
+- Windows: copy `config/managed-settings.json` to `%PROGRAMDATA%\ClaudeCode\managed-settings.json` (admin shell)
 
 ## Step 5: Personalize Paths
 

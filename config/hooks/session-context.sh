@@ -1,4 +1,5 @@
 #!/bin/bash
+# SYNC:LOCAL-ONLY  — per-env divergence: bangor delegates only to bangor-context.sh.
 # Gathers rich context at session startup
 # Uses jq for safe JSON creation to handle special characters
 source "$(dirname "$0")/path-bootstrap.sh"
@@ -11,10 +12,11 @@ INPUT=$(cat)
 # Collect context
 K8S_CTX=$(kubectl config current-context 2>/dev/null || echo "none")
 GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "not a git repo")
-# Capture full URL too — host (github vs other) gets lost by the owner/repo strip
-# but is needed to route the right rules file.
-GIT_REMOTE_URL=$(git remote get-url origin 2>/dev/null || echo "")
-GIT_REMOTE=$(echo "$GIT_REMOTE_URL" | sed 's/.*[:/]\([^/]*\/[^/]*\)\.git/\1/')
+# GIT_REMOTE is the owner/repo slug (e.g. "Bangor-Group-Indonesia/bangor-admin"),
+# used in the CTX summary. Host routing (gitlab vs github) is handled inside
+# gitlab-github-context.sh, which re-fetches the remote itself — no need to
+# pass the full URL through.
+GIT_REMOTE=$(git remote get-url origin 2>/dev/null | sed 's/.*[:/]\([^/]*\/[^/]*\)\.git/\1/' || echo "")
 
 # Detect project type
 PROJECT_TYPE="unknown"
@@ -53,33 +55,21 @@ CTX="Environment: k8s=${K8S_CTX}, branch=${GIT_BRANCH}, project=${PROJECT_TYPE},
 
 SESSION_ID=$(echo "$INPUT" | jq -r '.session_id // empty')
 
-# Burger Bangor business context. Triggers if cwd is under ~/bangor (the user's
-# workspace for Bangor repos) OR the git remote points to the Bangor org.
-# Sets the same flag the PreToolUse hook checks, so we don't re-inject on first bash.
-BANGOR_MATCH=false
-case "$PWD" in
-  "$HOME/bangor"|"$HOME/bangor"/*) BANGOR_MATCH=true ;;
-esac
-if ! $BANGOR_MATCH && echo "$GIT_REMOTE_URL" | grep -qiE 'bangor-group-indonesia'; then
-  BANGOR_MATCH=true
-fi
-if $BANGOR_MATCH; then
-  BANGOR_CTX="$HOME/.claude/hooks/bangor-context.md"
-  if [ -f "$BANGOR_CTX" ]; then
-    CTX="${CTX}\n\n$(cat "$BANGOR_CTX")"
-    [ -n "$SESSION_ID" ] && touch "/tmp/bangor-context-injected-${SESSION_ID}"
-  fi
-fi
-
-# Route rules by remote host. Match raw URL — owner/repo strip loses the host.
-case "$GIT_REMOTE_URL" in
-  *github*)
-    if [ -f "$HOME/.claude/hooks/github-rules.md" ]; then
-      CTX="${CTX}\n\n$(cat "$HOME/.claude/hooks/github-rules.md")"
-      [ -n "$SESSION_ID" ] && touch "/tmp/github-rules-injected-${SESSION_ID}"
-    fi
-    ;;
-esac
+# Delegate org-context injection to dedicated hook (bangor-context.sh). The
+# hook owns its own detection + injection + flag logic; we invoke it with a
+# synthesized PreToolUse-shape input so it behaves identically to its normal
+# trigger path. The flag it sets prevents re-injection on the first real
+# PreToolUse Bash.
+# SYNC:LOCAL-ONLY  — per-env divergence: bangor invokes only bangor-context.sh.
+SYNTH_INPUT=$(jq -n --arg cwd "$PWD" --arg sid "$SESSION_ID" \
+  '{cwd:$cwd,session_id:$sid,tool_input:{command:""}}')
+for ORG_HOOK in bangor-context.sh gitlab-github-context.sh; do
+  HOOK_PATH="$HOME/.claude/hooks/$ORG_HOOK"
+  [ ! -x "$HOOK_PATH" ] && continue
+  ORG_OUT=$(echo "$SYNTH_INPUT" | "$HOOK_PATH" 2>/dev/null)
+  ORG_CTX=$(echo "$ORG_OUT" | jq -r '.hookSpecificOutput.additionalContext // empty' 2>/dev/null)
+  [ -n "$ORG_CTX" ] && CTX="${CTX}\n\n${ORG_CTX}"
+done
 
 # Output JSON using jq for proper escaping
 jq -n \

@@ -27,33 +27,48 @@ All steps use `AskUserQuestion` selection UI and `TaskCreate` progress tracking.
 
 ```
 ├── .claude/
-│   └── skills/                       # Project-level skills (only available in this repo)
-│       └── init/SKILL.md             # Onboarding skill — /init
-├── config/
-│   ├── CLAUDE.md                     # Global user instructions → ~/.claude/CLAUDE.md
-│   ├── mcp-figma.sh                  # Figma MCP server launcher → ~/.claude/mcp-figma.sh
-│   ├── mcp-gdrive.sh                 # Google Drive MCP server launcher → ~/.claude/mcp-gdrive.sh
-│   ├── settings-macos.json           # macOS permissions/hooks → ~/.claude/settings.json
-│   ├── settings-windows.json         # Windows permissions/hooks → ~/.claude/settings.json
-│   ├── statusline.sh                 # Statusline script → ~/.claude/statusline.sh
-│   ├── managed-settings-macos.json   # macOS managed settings (system-level, requires sudo)
-│   ├── managed-settings-windows.json # Windows managed settings (system-level, requires admin)
-│   ├── agents/                       # Custom agent definitions (code-reviewer, debugger)
-│   ├── hooks/                        # PreToolUse/PostToolUse/SessionStart shell scripts
+│   └── skills/                          # Project-level skills (only available in this repo)
+│       ├── init/SKILL.md                # Onboarding skill — /init
+│       └── sync-config/                 # Canonical /sync-config skill + comparator
+│           ├── SKILL.md
+│           ├── compare-all.sh
+│           └── compare-all.test.sh
+├── config/                              # Files installed to ~/.claude/ (the "always" set)
+│   ├── CLAUDE.md                        # Global user instructions → ~/.claude/CLAUDE.md
+│   ├── settings.json                    # Combined permissions/hooks → ~/.claude/settings.json (install substitutes <bash for windows only> placeholder per OS)
+│   ├── statusline.sh                    # Statusline script → ~/.claude/statusline.sh
+│   ├── managed-settings.json            # Combined managed settings (system-level, OS install path differs)
+│   ├── _lib/                            # Shared test helpers + compat wrappers → ~/.claude/_lib/
+│   ├── agents/                          # Custom agent definitions (code-reviewer, debugger)
+│   ├── hooks/                           # PreToolUse/PostToolUse/SessionStart shell scripts
 │   ├── rules/
-│   │   ├── docs-maintenance.md       # Doc update triggers
-│   │   ├── docs-convention.md        # Format for convention docs
-│   │   ├── prod-safety.md            # Production environment guardrails
-│   │   ├── python-env.md             # Python venv conventions
-│   │   ├── style-*.md                # Language style rules (auto-load via paths frontmatter)
-│   │   ├── shell-macos.md            # macOS only
-│   │   └── shell-windows.md          # Windows only
-│   └── skills/                       # Team-shared skills → ~/.claude/skills/
-│       ├── <name>/SKILL.md           # Skill definition (frontmatter + instructions)
-│       ├── <name>/templates/         # Some skills have template files
-│       └── <name>/references/        # Some skills have reference docs
+│   │   ├── docs-maintenance.md          # Doc update triggers
+│   │   ├── docs-convention.md           # Format for convention docs
+│   │   ├── prod-safety.md               # Production environment guardrails
+│   │   ├── python-env.md                # Python venv conventions
+│   │   ├── style-*.md                   # Language style rules (auto-load via paths frontmatter)
+│   │   ├── shell-macos.md               # macOS only
+│   │   └── shell-windows.md             # Windows only
+│   └── skills/                          # Team-shared skills → ~/.claude/skills/
+│       ├── <name>/SKILL.md              # Skill definition (frontmatter + instructions)
+│       ├── <name>/templates/            # Some skills have template files
+│       └── <name>/references/           # Some skills have reference docs
+├── mcp/                                 # MCP server bundles, mirrored install → ~/.claude/mcp/<service>/
+│   ├── figma/                           # Figma MCP launcher + env template (Keychain fallback)
+│   │   ├── mcp-figma.sh
+│   │   ├── mcp-figma.test.sh
+│   │   └── figma.env.sample
+│   └── gdrive/                          # Google Drive MCP launcher (OAuth co-located)
+│       ├── mcp-gdrive.sh
+│       └── mcp-gdrive.test.sh
 └── README.md
 ```
+
+**Install-path mental model**:
+- Anything under `config/` installs flat to `~/.claude/<relative-path>` (the "always" set).
+- `mcp/<svc>/` installs mirrored to `~/.claude/mcp/<svc>/` (launchers + env templates).
+
+The launcher scripts under `mcp/<svc>/` use `$(dirname "$0")` to resolve their env files self-relatively, so the same code works both at repo location (for testing) and the mirrored install path.
 
 ### Path Placeholder Convention
 
@@ -72,9 +87,9 @@ Skills and rules use `<workspace>` as a placeholder for the user's actual worksp
 - Must be executable (`chmod +x`)
 - Use `jq` for safe JSON parsing/creation (gracefully degrade if missing)
 
-**Permissions**: Edit `config/settings-macos.json` and/or `config/settings-windows.json`. Evaluation order: `deny` > `ask` > `allow` (first match wins). Keep both files in sync for shared permissions; only OS-specific entries should differ.
+**Permissions**: Edit `config/settings.json` (single file for both macOS and Windows). Evaluation order: `deny` > `ask` > `allow` (first match wins). Hook commands use the placeholder `<bash for windows only>~/.claude/hooks/<script>.sh` — install/sync substitutes the placeholder per OS (drop on macOS/Linux; replace with `bash ` on Windows).
 
-**Managed Settings**: Edit `config/managed-settings-macos.json` and/or `config/managed-settings-windows.json`. These are system-level configs that **cannot be overridden** by user or project settings. Installed to:
+**Managed Settings**: Edit `config/managed-settings.json` (single file). System-level config that **cannot be overridden** by user or project settings. Installed to:
 - macOS: `/Library/Application Support/ClaudeCode/managed-settings.json` (requires `sudo`)
 - Linux/WSL: `/etc/claude-code/managed-settings.json` (requires `sudo`)
 - Windows: `%PROGRAMDATA%\ClaudeCode\managed-settings.json` (requires admin)
@@ -126,10 +141,10 @@ echo '{"tool_input": {"command": "git reset --hard"}}' | ./config/hooks/validate
 
 ## Gotchas
 
-- **Two settings files**: `settings-macos.json` and `settings-windows.json` must stay in sync for shared permissions. Only OS-specific entries (e.g., paths, shell tools) should differ.
+- **Single settings file with OS placeholder**: `config/settings.json` is shared across macOS and Windows. Hook commands carry the literal placeholder `<bash for windows only>` — the install/sync step substitutes it (drop on macOS/Linux, replace with `bash ` on Windows). Permission allow/deny lists are the union of both OSes; out-of-OS entries are no-ops.
 - **Hook exit codes matter**: `exit 1` warns but allows; `exit 2` blocks. Using the wrong one changes behavior significantly.
 - **Skills reference local files with relative paths**: Some skills use `references/` subdirectories. These paths are relative to the SKILL.md location, so the directory structure must be preserved during copy.
 - **WSL has a separate `~/.claude`**: WSL's home (`/home/<user>`) is different from Windows home (`C:\Users\<user>`). If the user runs Claude Code in both WSL and Windows terminals, they need config in both locations.
-- **Windows hooks require `bash` in PATH**: `settings-windows.json` invokes hooks via `bash ~/.claude/hooks/<script>.sh`. Git Bash provides this, but verify `bash` is in PATH for cmd/PowerShell environments.
+- **Windows requires `bash` in PATH**: After the placeholder is substituted, Windows hook commands become `bash ~/.claude/hooks/<script>.sh`. Git Bash provides this, but verify `bash` is in PATH for cmd/PowerShell environments.
 - **Managed settings override everything**: When `allowManagedPermissionRulesOnly` is set, user-level (`~/.claude/settings.json`) and project-level (`.claude/settings.json`) permission rules are **ignored**. Only managed settings permissions apply. Keep managed settings in sync with user-level settings when adding new permissions.
-- **Two managed settings files**: Like `settings-*.json`, `managed-settings-macos.json` and `managed-settings-windows.json` must stay in sync for shared permissions. Only OS-specific entries should differ.
+- **Keep `managed-settings.json` synced with `settings.json`**: managed settings override everything else, so when `allowManagedPermissionRulesOnly` is set, only the managed settings allow/deny lists apply. Update both files together when permissions change.

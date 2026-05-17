@@ -1,3 +1,6 @@
+<!--SYNC:LOCAL-ONLY-->
+<!-- Bangor-team-specific business context. Do not sync to ib or other repos. -->
+
 # Burger Bangor (Bangor Group Indonesia) — business + engineering context
 
 > **Source of this context:** `~/.claude/hooks/bangor-context.md`, injected at SessionStart by `~/.claude/hooks/bangor-context.sh` (fires when the current git repo is under the `Bangor-Group-Indonesia` GitHub org). Edit the `.md` to change the content; edit the `.sh` to change when it fires.

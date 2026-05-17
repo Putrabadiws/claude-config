@@ -58,7 +58,8 @@ if [ "$HAS_TESTS" = false ]; then
 
   echo "No test files staged. Source code changes require unit tests." >&2
   echo "Source files detected:" >&2
-  echo -e "$SOURCES" | head -10 >&2
+  # BSD echo doesn't interpret \n; use printf for cross-platform escape handling.
+  printf '%b' "$SOURCES" | head -10 >&2
   echo "Write and stage test files before committing." >&2
   exit 1
 fi

@@ -1,4 +1,8 @@
 #!/bin/bash
+# SYNC:LOCAL-ONLY  — per-repo PLATFORM detection diverges; do not bulk-cp from live or other repo.
+# Source shared cross-platform compat helpers (_date_from_epoch, _file_mtime, etc.)
+source "$HOME/.claude/_lib/compat.sh"
+
 input=$(cat)
 echo "$input" | jq '.' > "$HOME/.claude/logs/statusline-raw.json" 2>/dev/null
 
@@ -39,7 +43,7 @@ CACHE_MAX_AGE=5
 
 cache_is_stale() {
   [ ! -f "$CACHE_FILE" ] || \
-  [ $(($(date +%s) - $(stat -f %m "$CACHE_FILE" 2>/dev/null || echo 0))) -gt $CACHE_MAX_AGE ]
+  [ $(($(date +%s) - $(_file_mtime "$CACHE_FILE" || echo 0))) -gt $CACHE_MAX_AGE ]
 }
 
 if cache_is_stale; then
@@ -173,13 +177,8 @@ truncate_ansi() {
   ' "$max_w"
 }
 
-# Cross-platform date helpers (macOS uses -r <epoch>, Linux/MINGW uses -d @<epoch>)
-_date_from_epoch() {
-  # Usage: _date_from_epoch <epoch> <format>
-  local ts="$1" fmt="$2"
-  date -d "@$ts" +"$fmt" 2>/dev/null || date -r "$ts" +"$fmt" 2>/dev/null
-}
-
+# Note: _date_from_epoch lives in ~/.claude/_lib/compat.sh (sourced at the top
+# of this file). _midnight_today is statusline-specific so it stays here.
 _midnight_today() {
   # Returns epoch of midnight today (local time)
   date -d "$(date +%Y-%m-%d)" +%s 2>/dev/null || \
@@ -331,8 +330,10 @@ LINE1="${LINE1}📂 ${BOLD}${REPO}${RESET}${GIT_INFO}"
 LINE1_TRIMMED=$(truncate_ansi "$LINE1_WIDTH" "$LINE1")
 
 # Line 2: ctx [emoji] XX% ⌞tokens⌝ │ 💥 compact info │ ⏱ duration
-# Adaptive: show threshold when plenty of room, show remaining when ≤15%
-if [ "$USABLE_LEFT_OF_COMPACT" -le 15 ]; then
+# Adaptive: show threshold when plenty of room, show remaining when ≤15%.
+# Use awk for the comparison — USABLE_LEFT_OF_COMPACT is a float (%.1f), and
+# bash `-le` requires integers. Matches the pattern used by compute_tier above.
+if awk "BEGIN {exit !($USABLE_LEFT_OF_COMPACT <= 15)}"; then
   COMPACT_INFO="💥 ${CTX_COLOR}~${USABLE_LEFT}% left${RESET}"
 else
   COMPACT_INFO="💥 ${DIM}auto-compact at ~${COMPACT_PCT}%${RESET}"

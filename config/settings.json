@@ -19,33 +19,27 @@
       "WebFetch(domain:code.claude.com)",
       "Read(*)",
       "WebSearch",
-
       "Bash(grep *)",
       "Bash(cat *)",
       "Bash(ls *)",
       "Bash(open *)",
-
       "Bash(go mod tidy)",
       "Bash(go build *)",
       "Bash(go test *)",
       "Bash(go run *)",
       "Bash(golangci-lint *)",
-
       "Bash(npm install *)",
       "Bash(npm run *)",
       "Bash(npm test *)",
       "Bash(npx eslint *)",
       "Bash(node --check *)",
-
       "Bash(./mvnw compile *)",
       "Bash(./mvnw test *)",
       "Bash(./mvnw clean *)",
       "Bash(./mvnw spring-boot:run *)",
-
       "Bash(pytest *)",
       "Bash(ruff check *)",
       "Bash(pip install *)",
-
       "Bash(git status *)",
       "Bash(git log *)",
       "Bash(git stash list)",
@@ -55,7 +49,11 @@
       "Bash(git checkout *)",
       "Bash(git remote -v)",
       "Bash(git submodule *)",
-
+      "Bash(glab mr view *)",
+      "Bash(glab mr diff *)",
+      "Bash(glab mr list *)",
+      "Bash(glab mr note list *)",
+      "Bash(glab api *)",
       "Bash(gh pr view *)",
       "Bash(gh pr diff *)",
       "Bash(gh pr list *)",
@@ -63,28 +61,23 @@
       "Bash(gh api *)",
       "Bash(gh repo view *)",
       "Bash(gh run view *)",
-
       "Bash(kubectl get *)",
       "Bash(kubectl logs *)",
       "Bash(kubectl describe *)",
       "Bash(kubectl config *)",
       "Bash(kubectl top *)",
-
       "Bash(helm template *)",
       "Bash(helm list *)",
       "Bash(helm status *)",
-
       "Bash(dig *)",
       "Bash(curl *)",
       "Bash(brew list *)",
-
       "Bash(git add *)",
       "Bash(git fetch *)",
       "Bash(git rev-parse *)",
       "Bash(git rev-list *)",
       "Bash(git ls-files *)",
       "Bash(git describe *)",
-
       "Bash(jq *)",
       "Bash(yq *)",
       "Bash(wc *)",
@@ -105,7 +98,6 @@
       "Bash(diff *)",
       "Bash(comm *)",
       "Bash(tee *)",
-
       "Bash(date *)",
       "Bash(echo *)",
       "Bash(printf *)",
@@ -115,13 +107,21 @@
       "Bash(uname *)",
       "Bash(env)",
       "Bash(printenv *)",
-      "Bash(basename *)"
+      "Bash(basename *)",
+      "Bash(choco list *)",
+      "Bash(explorer *)",
+      "Bash(ipconfig *)",
+      "Bash(netstat *)",
+      "Bash(nslookup *)",
+      "Bash(start *)",
+      "Bash(where *)",
+      "Bash(winget list *)",
+      "Bash(winget search *)"
     ],
     "ask": [
       "Bash(rm:*)",
       "Bash(mv:*)",
       "Bash(cp -r:*)",
-
       "Bash(git branch -D *)",
       "Bash(git commit:*)",
       "Bash(git push:*)",
@@ -134,7 +134,15 @@
       "Bash(git reset:*)",
       "Bash(git merge:*)",
       "Bash(git remote set-url:*)",
-
+      "Bash(glab mr create:*)",
+      "Bash(glab mr approve:*)",
+      "Bash(glab mr merge:*)",
+      "Bash(glab mr close:*)",
+      "Bash(glab mr comment:*)",
+      "Bash(glab mr note:*)",
+      "Bash(glab mr checkout:*)",
+      "Bash(glab mr update:*)",
+      "Bash(glab api -X *)",
       "Bash(gh pr create:*)",
       "Bash(gh pr edit:*)",
       "Bash(gh pr merge:*)",
@@ -143,30 +151,19 @@
       "Bash(gh pr review:*)",
       "Bash(gh pr checkout:*)",
       "Bash(gh api -X *)",
-
       "Bash(kubectl apply:*)",
       "Bash(kubectl delete:*)",
       "Bash(kubectl rollout:*)",
       "Bash(kubectl exec:*)",
       "Bash(kubectl port-forward:*)",
-
       "Bash(helm install:*)",
       "Bash(helm upgrade:*)",
       "Bash(helm uninstall:*)",
-
       "Bash(tar:*)",
       "Bash(docker:*)",
-
       "WebFetch(*)"
     ],
     "deny": [
-      "Read(./**/.env)",
-      "Read(./**/.env.*)",
-      "Read(./**/secrets/**)",
-      "Read(./**/*.pem)",
-      "Read(./**/*.key)",
-      "Read(./**/credentials*)",
-
       "Bash(curl * | sh)",
       "Bash(curl * | bash)",
       "Bash(wget * | sh)",
@@ -175,7 +172,16 @@
       "Bash(dd if=*)",
       "Bash(mkfs.*)",
       "Bash(chmod 777 *)",
-      "Bash(sudo *)"
+      "Bash(sudo *)",
+      "Bash(diskpart *)",
+      "Bash(format *:)",
+      "Bash(runas *)",
+      "Read(./**/*.key)",
+      "Read(./**/*.pem)",
+      "Read(./**/.env)",
+      "Read(./**/.env.*)",
+      "Read(./**/credentials*)",
+      "Read(./**/secrets/**)"
     ],
     "defaultMode": "default"
   },
@@ -190,42 +196,57 @@
         "hooks": [
           {
             "type": "command",
-            "command": "~/.claude/hooks/inject-claude-version.sh",
+            "command": "<bash for windows only>~/.claude/hooks/inject-claude-version.sh",
             "timeout": 3
           },
           {
             "type": "command",
-            "command": "~/.claude/hooks/validate-destructive.sh",
+            "command": "<bash for windows only>~/.claude/hooks/validate-destructive.sh",
             "timeout": 3
           },
           {
             "type": "command",
-            "command": "~/.claude/hooks/github-context.sh",
+            "command": "<bash for windows only>~/.claude/hooks/gitlab-github-context.sh",
             "timeout": 3
           },
           {
             "type": "command",
-            "command": "~/.claude/hooks/bangor-context.sh",
+            "command": "<bash for windows only>~/.claude/hooks/bangor-context.sh",
             "timeout": 3
           },
           {
             "type": "command",
-            "command": "~/.claude/hooks/validate-db-readonly.sh",
+            "command": "<bash for windows only>~/.claude/hooks/validate-db-readonly.sh",
             "timeout": 3
           },
           {
             "type": "command",
-            "command": "~/.claude/hooks/docs-check.sh",
+            "command": "<bash for windows only>~/.claude/hooks/docs-check.sh",
             "timeout": 3
           },
           {
             "type": "command",
-            "command": "~/.claude/hooks/require-tests.sh",
+            "command": "<bash for windows only>~/.claude/hooks/require-tests.sh",
             "timeout": 10
           },
           {
             "type": "command",
-            "command": "~/.claude/hooks/block-bulk-config-copy.sh",
+            "command": "<bash for windows only>~/.claude/hooks/block-bulk-config-copy.sh",
+            "timeout": 3
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "<bash for windows only>~/.claude/hooks/regex-self-check.sh",
+            "timeout": 3
+          },
+          {
+            "type": "command",
+            "command": "<bash for windows only>~/.claude/hooks/inject-shell-test-reminder.sh",
             "timeout": 3
           }
         ]
@@ -237,7 +258,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "~/.claude/hooks/lint-check.sh",
+            "command": "<bash for windows only>~/.claude/hooks/lint-check.sh",
             "async": true,
             "timeout": 30,
             "statusMessage": "Linting file..."
@@ -249,10 +270,10 @@
         "hooks": [
           {
             "type": "command",
-            "command": "~/.claude/hooks/check-pr-after-push.sh",
+            "command": "<bash for windows only>~/.claude/hooks/check-mr-pr-after-push.sh",
             "if": "Bash(git push *)",
             "timeout": 15,
-            "statusMessage": "Checking PR status..."
+            "statusMessage": "Checking MR/PR status..."
           }
         ]
       }
@@ -263,12 +284,12 @@
         "hooks": [
           {
             "type": "command",
-            "command": "~/.claude/hooks/cleanup-settings-local.sh",
+            "command": "<bash for windows only>~/.claude/hooks/cleanup-settings-local.sh",
             "timeout": 5
           },
           {
             "type": "command",
-            "command": "~/.claude/hooks/session-context.sh",
+            "command": "<bash for windows only>~/.claude/hooks/session-context.sh",
             "timeout": 5
           }
         ]
@@ -278,7 +299,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "~/.claude/hooks/check-config-update.sh",
+            "command": "<bash for windows only>~/.claude/hooks/check-config-update.sh",
             "timeout": 10
           }
         ]
@@ -289,7 +310,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "~/.claude/hooks/cleanup-settings-local.sh",
+            "command": "<bash for windows only>~/.claude/hooks/cleanup-settings-local.sh",
             "timeout": 5
           }
         ]

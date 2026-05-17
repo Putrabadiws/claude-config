@@ -1,5 +1,5 @@
 #!/bin/bash
-# Checks if the shared claude-config repo has new commits on origin/main
+# Checks if ib-claude-config repo has new commits on origin/main
 # Runs at session startup only (not resume/compact), with 24h cooldown
 # Exit 0 always — never blocks session start
 source "$(dirname "$0")/path-bootstrap.sh"
@@ -92,7 +92,7 @@ echo "$COMMIT_COUNT" > "$PENDING_FILE"
 # Inject context for Claude
 CONTEXT="TEAM CONFIG UPDATE AVAILABLE
 
-The shared claude-config repo has ${COMMIT_COUNT} new commit(s) on origin/main not yet applied to ~/.claude/.
+ib-claude-config has ${COMMIT_COUNT} new commit(s) on origin/main not yet applied to ~/.claude/.
 
 New commits:
 ${COMMIT_LOG}
@@ -100,8 +100,8 @@ ${COMMIT_LOG}
 Changed config files:
 ${CHANGED_FILES}
 
-Inform the user about this update and suggest they run /bangor-sync-config to sync their local config.
-Do NOT auto-apply — wait for the user to explicitly opt in."
+Inform the user about this update and suggest they run /rnd-update-config to sync their local config.
+Do NOT auto-invoke the skill — wait for the user to explicitly run it."
 
 jq -n --arg ctx "$CONTEXT" '{
   hookSpecificOutput: {
