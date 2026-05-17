@@ -1,13 +1,13 @@
 ---
-name: sync-config
+name: bangor-sync-config
 description: Sync local ~/.claude/ config with the team bangor-claude-config repo.
 disable-model-invocation: true
 allowed-tools: Bash(git *), Bash(gh *), Bash(cp *), Bash(chmod *), Bash(diff *), Bash(ls *), Bash(cat *), Bash(date *), Bash(mkdir *), Read, Grep, Glob, Edit, Write
 ---
 
-# /sync-config
+# /bangor-sync-config
 
-Sync local `~/.claude/` config with the team's `bangor-claude-config` repo. This skill is **never auto-invoked** — only runs when the user explicitly types `/sync-config`.
+Sync local `~/.claude/` config with the team's `bangor-claude-config` repo. This skill is **never auto-invoked** — only runs when the user explicitly types `/bangor-sync-config`.
 
 ## Pre-flight
 
@@ -20,7 +20,7 @@ Sync local `~/.claude/` config with the team's `bangor-claude-config` repo. This
 1. Check `git -C <repo> status` for uncommitted changes (tracked and untracked)
 2. If uncommitted changes exist:
    - Show the user what's dirty
-   - `git -C <repo> stash push -m "sync-config: auto-stash before sync"`
+   - `git -C <repo> stash push -m "bangor-sync-config: auto-stash before sync"`
    - Track that we stashed (need to pop later)
 3. `git -C <repo> checkout main`
 4. `git -C <repo> pull origin main`

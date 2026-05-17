@@ -100,7 +100,7 @@ ${COMMIT_LOG}
 Changed config files:
 ${CHANGED_FILES}
 
-Inform the user about this update and suggest they sync their local config.
+Inform the user about this update and suggest they run /bangor-sync-config to sync their local config.
 Do NOT auto-apply — wait for the user to explicitly opt in."
 
 jq -n --arg ctx "$CONTEXT" '{

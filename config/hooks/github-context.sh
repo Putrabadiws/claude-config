@@ -15,11 +15,13 @@ FLAG="/tmp/github-rules-injected-${SESSION_ID}"
 # Already injected this session? Skip
 [ -f "$FLAG" ] && { echo '{"suppressOutput": true}'; exit 0; }
 
-# Determine target directory: cd target or cwd
+# Determine target directory: cd target or cwd.
+# BSD sed/grep on macOS don't support \s — use [[:space:]] (POSIX) so this
+# works on both macOS and Linux.
 TARGET_DIR=""
-if echo "$COMMAND" | grep -qE '^\s*cd\s+'; then
+if echo "$COMMAND" | grep -qE '^[[:space:]]*cd[[:space:]]+'; then
   # Extract cd target (first argument after cd)
-  TARGET_DIR=$(echo "$COMMAND" | sed -E 's/^\s*cd\s+([^ &;|]+).*/\1/')
+  TARGET_DIR=$(echo "$COMMAND" | sed -E 's/^[[:space:]]*cd[[:space:]]+([^ &;|]+).*/\1/')
   # Expand ~ if present
   TARGET_DIR="${TARGET_DIR/#\~/$HOME}"
 elif [ -n "$CWD" ]; then
@@ -28,8 +30,14 @@ fi
 
 [ -z "$TARGET_DIR" ] && { echo '{"suppressOutput": true}'; exit 0; }
 
-# Check if target is a git repo
+# Only inject when target is a git repo whose remote points to GitHub.
+# Match on raw remote URL — stripping to owner/repo loses the host.
 if [ -d "$TARGET_DIR/.git" ]; then
+  REMOTE_URL=$(git -C "$TARGET_DIR" remote get-url origin 2>/dev/null || echo "")
+  case "$REMOTE_URL" in
+    *github*) ;;
+    *) echo '{"suppressOutput": true}'; exit 0 ;;
+  esac
   touch "$FLAG"
   RULES=$(cat ~/.claude/hooks/github-rules.md 2>/dev/null || echo "")
   if [ -n "$RULES" ]; then

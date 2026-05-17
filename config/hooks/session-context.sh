@@ -11,7 +11,10 @@ INPUT=$(cat)
 # Collect context
 K8S_CTX=$(kubectl config current-context 2>/dev/null || echo "none")
 GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "not a git repo")
-GIT_REMOTE=$(git remote get-url origin 2>/dev/null | sed 's/.*[:/]\([^/]*\/[^/]*\)\.git/\1/' || echo "")
+# Capture full URL too — host (github vs other) gets lost by the owner/repo strip
+# but is needed to route the right rules file.
+GIT_REMOTE_URL=$(git remote get-url origin 2>/dev/null || echo "")
+GIT_REMOTE=$(echo "$GIT_REMOTE_URL" | sed 's/.*[:/]\([^/]*\/[^/]*\)\.git/\1/')
 
 # Detect project type
 PROJECT_TYPE="unknown"
@@ -48,15 +51,35 @@ fi
 CTX="Environment: k8s=${K8S_CTX}, branch=${GIT_BRANCH}, project=${PROJECT_TYPE}, claude=${CLAUDE_VERSION}"
 [ -n "$GIT_REMOTE" ] && CTX="${CTX}, repo=${GIT_REMOTE}"
 
-# If in a git repo, append github rules and set flag for PreToolUse hook
 SESSION_ID=$(echo "$INPUT" | jq -r '.session_id // empty')
-GITHUB_RULES=""
-if [ "$GIT_BRANCH" != "not a git repo" ] && [ -f "$HOME/.claude/hooks/github-rules.md" ]; then
-  GITHUB_RULES=$(cat "$HOME/.claude/hooks/github-rules.md")
-  CTX="${CTX}\n\n${GITHUB_RULES}"
-  # Set flag so PreToolUse hook skips re-injection
-  [ -n "$SESSION_ID" ] && touch "/tmp/github-rules-injected-${SESSION_ID}"
+
+# Burger Bangor business context. Triggers if cwd is under ~/bangor (the user's
+# workspace for Bangor repos) OR the git remote points to the Bangor org.
+# Sets the same flag the PreToolUse hook checks, so we don't re-inject on first bash.
+BANGOR_MATCH=false
+case "$PWD" in
+  "$HOME/bangor"|"$HOME/bangor"/*) BANGOR_MATCH=true ;;
+esac
+if ! $BANGOR_MATCH && echo "$GIT_REMOTE_URL" | grep -qiE 'bangor-group-indonesia'; then
+  BANGOR_MATCH=true
 fi
+if $BANGOR_MATCH; then
+  BANGOR_CTX="$HOME/.claude/hooks/bangor-context.md"
+  if [ -f "$BANGOR_CTX" ]; then
+    CTX="${CTX}\n\n$(cat "$BANGOR_CTX")"
+    [ -n "$SESSION_ID" ] && touch "/tmp/bangor-context-injected-${SESSION_ID}"
+  fi
+fi
+
+# Route rules by remote host. Match raw URL — owner/repo strip loses the host.
+case "$GIT_REMOTE_URL" in
+  *github*)
+    if [ -f "$HOME/.claude/hooks/github-rules.md" ]; then
+      CTX="${CTX}\n\n$(cat "$HOME/.claude/hooks/github-rules.md")"
+      [ -n "$SESSION_ID" ] && touch "/tmp/github-rules-injected-${SESSION_ID}"
+    fi
+    ;;
+esac
 
 # Output JSON using jq for proper escaping
 jq -n \
