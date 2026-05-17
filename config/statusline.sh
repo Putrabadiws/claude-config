@@ -364,6 +364,6 @@ PENDING_FILE="$HOME/.claude/.config-update-pending"
 if [ -f "$PENDING_FILE" ]; then
   PENDING_COUNT=$(cat "$PENDING_FILE" 2>/dev/null | tr -d '[:space:]')
   [ -z "$PENDING_COUNT" ] && PENDING_COUNT="new"
-  printf '%b\n' "${YELLOW}🔄 ${PENDING_COUNT} new commit(s) on team config — run ${BOLD}/sync-config${RESET}${YELLOW} to sync${RESET}"
+  printf '%b\n' "${YELLOW}🔄 ${PENDING_COUNT} new commit(s) on team config — run ${BOLD}/bangor-sync-config${RESET}${YELLOW} to sync${RESET}"
 fi
 
