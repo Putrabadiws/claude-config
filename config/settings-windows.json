@@ -197,6 +197,11 @@
           },
           {
             "type": "command",
+            "command": "bash ~/.claude/hooks/bangor-context.sh",
+            "timeout": 3
+          },
+          {
+            "type": "command",
             "command": "bash ~/.claude/hooks/validate-db-readonly.sh",
             "timeout": 3
           },
