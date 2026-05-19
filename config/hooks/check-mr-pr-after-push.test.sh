@@ -140,4 +140,109 @@ fi
 rm -rf "$tmp" "$mock_bin" "$GH_LOG"
 unset GH_LOG
 
+# Test 9: shell redirection (`2>&1`, `|`, `>`) must NOT be parsed as branch.
+# Bug: previously the awk parser extracted "2>&1" from `git push 2>&1 | tail`
+# because its stop-list only knew about chain ops (&&, ||, ;, |) — not redirects.
+# Result was a false-positive "🚨 Branch [2>&1] ... NO open merge request".
+# Fix: parser stops at any token containing shell metacharacters.
+# Strategy: mock glab, push without explicit branch arg — verify the MR query
+# uses the current branch (real-branch), not the shell tail token.
+tmp=$(mock_git_repo "https://gitlab.com/x/y.git")
+( cd "$tmp" && git checkout -q -b real-branch 2>/dev/null || true )
+mock_bin=$(mktemp -d)
+cat > "$mock_bin/glab" <<'GLEOF'
+#!/bin/bash
+echo "ARGS: $*" >> "$GLAB_LOG"
+echo '[]'
+GLEOF
+chmod +x "$mock_bin/glab"
+GLAB_LOG=$(mktemp)
+export GLAB_LOG
+out=$(PATH="$mock_bin:/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin" invoke_check 'git push 2>&1 | tail -10' '0' "$tmp")
+if echo "$out" | grep -q '\[real-branch\]'; then
+  echo "PASS: shell redirection (2>&1) ignored, current branch used"; PASS=$((PASS + 1))
+elif echo "$out" | grep -q '\[2>&1\]' || echo "$out" | grep -q '\[2\]'; then
+  echo "FAIL: shell redirection parsed as branch: $out"; FAIL=$((FAIL + 1))
+else
+  echo "FAIL: unexpected output: $out"; FAIL=$((FAIL + 1))
+fi
+rm -rf "$tmp" "$mock_bin" "$GLAB_LOG"
+unset GLAB_LOG
+
+# Test 10: explicit branch arg followed by redirection — branch must still parse
+# correctly (positive case, ensures the fix doesn't over-stop on valid input).
+tmp=$(mock_git_repo "https://gitlab.com/x/y.git")
+( cd "$tmp" && git checkout -q -b feature/explicit 2>/dev/null || true )
+mock_bin=$(mktemp -d)
+cat > "$mock_bin/glab" <<'GLEOF'
+#!/bin/bash
+echo "ARGS: $*" >> "$GLAB_LOG"
+echo '[]'
+GLEOF
+chmod +x "$mock_bin/glab"
+GLAB_LOG=$(mktemp)
+export GLAB_LOG
+out=$(PATH="$mock_bin:/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin" invoke_check 'git push origin feature/explicit 2>&1 | tail -10' '0' "$tmp")
+if echo "$out" | grep -q '\[feature/explicit\]'; then
+  echo "PASS: explicit branch survives trailing redirection"; PASS=$((PASS + 1))
+else
+  echo "FAIL: explicit branch not preserved: $out"; FAIL=$((FAIL + 1))
+fi
+rm -rf "$tmp" "$mock_bin" "$GLAB_LOG"
+unset GLAB_LOG
+
+# Test 11: redirection-only tail (`> /dev/null`) — current branch should be used.
+# False-positive test: `>` is a single-char token that LOOKS short but is a meta.
+tmp=$(mock_git_repo "https://gitlab.com/x/y.git")
+( cd "$tmp" && git checkout -q -b feature/redir 2>/dev/null || true )
+mock_bin=$(mktemp -d)
+cat > "$mock_bin/glab" <<'GLEOF'
+#!/bin/bash
+echo "ARGS: $*" >> "$GLAB_LOG"
+echo '[]'
+GLEOF
+chmod +x "$mock_bin/glab"
+GLAB_LOG=$(mktemp)
+export GLAB_LOG
+out=$(PATH="$mock_bin:/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin" invoke_check 'git push > /dev/null' '0' "$tmp")
+if echo "$out" | grep -q '\[feature/redir\]'; then
+  echo "PASS: stdout redirection (>) ignored, current branch used"; PASS=$((PASS + 1))
+else
+  echo "FAIL: stdout redirection parsed wrong: $out"; FAIL=$((FAIL + 1))
+fi
+rm -rf "$tmp" "$mock_bin" "$GLAB_LOG"
+unset GLAB_LOG
+
+# Test 12: standalone "push" in command (not preceded by "git") must NOT be
+# parsed as a git-push command. Bug: previously, any "push" token triggered
+# the branch-extraction loop. Multi-line bash commands (e.g. `git commit -m`
+# with a HEREDOC commit message containing the phrase "past push args") had
+# the word "push" appearing at the start of a line in the message body. The
+# parser then extracted the next token ("args") as if it were a branch name.
+# Fix: require the preceding token to equal "git" before treating "push" as
+# a real git push.
+# Strategy: command has a fake "push args" in an echo string AND a real
+# `git push origin real-branch`. Verify real-branch wins.
+tmp=$(mock_git_repo "https://gitlab.com/x/y.git")
+( cd "$tmp" && git checkout -q -b real-branch 2>/dev/null || true )
+mock_bin=$(mktemp -d)
+cat > "$mock_bin/glab" <<'GLEOF'
+#!/bin/bash
+echo "ARGS: $*" >> "$GLAB_LOG"
+echo '[]'
+GLEOF
+chmod +x "$mock_bin/glab"
+GLAB_LOG=$(mktemp)
+export GLAB_LOG
+out=$(PATH="$mock_bin:/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin" invoke_check 'echo "fixed past push args bug" && git push origin real-branch' '0' "$tmp")
+if echo "$out" | grep -q '\[real-branch\]'; then
+  echo "PASS: 'push' in commit-msg text ignored, real branch used"; PASS=$((PASS + 1))
+elif echo "$out" | grep -q '\[args\]'; then
+  echo "FAIL: 'push args' in text parsed as branch=args: $out"; FAIL=$((FAIL + 1))
+else
+  echo "FAIL: unexpected output: $out"; FAIL=$((FAIL + 1))
+fi
+rm -rf "$tmp" "$mock_bin" "$GLAB_LOG"
+unset GLAB_LOG
+
 summary

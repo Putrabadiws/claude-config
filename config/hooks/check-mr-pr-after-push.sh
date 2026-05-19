@@ -35,13 +35,23 @@ git -C "$DIR" rev-parse --git-dir > /dev/null 2>&1 || suppress
 BRANCH=$(echo "$COMMAND" | awk '
   {
     for (i=1; i<=NF; i++) {
-      if ($i == "push") {
+      # Only treat "push" as a git-push command when preceded by "git". Without
+      # this check, the word "push" appearing inside a commit message (e.g.,
+      # "past push args and into the shell tail") gets parsed as if it were a
+      # real `git push` and the next word ("args") gets extracted as the branch.
+      if ($i == "push" && i > 1 && $(i-1) == "git") {
         for (j=i+1; j<=NF; j++) {
           arg=$j
           if (arg ~ /^-/) continue
           if (arg == "origin" || arg == "upstream") continue
+          # Stop at chain ops (`&&`, `||`, `;`, `|`), redirections (`>`, `2>&1`,
+          # `>/dev/null`, `&>`, etc.), backgrounding (`&`), or subshells (`(`,
+          # `)`). Any token containing shell metacharacters cannot be a branch
+          # name (git rejects these chars), so seeing one means we are past the
+          # push args and into the shell tail — stop looking. Fixes a bug where
+          # `git push 2>&1 | tail` had `2>&1` extracted as the branch name.
+          if (arg ~ /[<>&;|()]/) next
           sub(/:.*$/, "", arg)
-          if (arg ~ /^(&&|\|\||;|\|)$/) next
           print arg
           exit
         }
