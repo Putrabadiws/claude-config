@@ -39,11 +39,11 @@ def format_response(s):
 
 def extract_text_oneline(c):
     if isinstance(c, str) and c.strip():
-        return oneliner(c.replace('\n', ' '))[:120]
+        return oneliner(c.replace('\n', ' '))[:1000]
     if isinstance(c, list):
         for item in c:
             if isinstance(item, dict) and item.get('type') == 'text' and item['text'].strip():
-                return oneliner(item['text'].replace('\n', ' '))[:120]
+                return oneliner(item['text'].replace('\n', ' '))[:1000]
     return ''
 
 
