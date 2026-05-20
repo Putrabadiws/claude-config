@@ -92,4 +92,48 @@ else
   echo "FAIL: rate limit not rendered"; FAIL=$((FAIL + 1))
 fi
 
+# ─────────────────────────────────────────────────────────────────────────────
+# Cross-session git cache isolation: another session's recent cache write must
+# not bleed its branch into this session's statusline. Regression test for the
+# global /tmp/cc-statusline-git file — that single unkeyed file caused the
+# most-recently-rendered terminal's branch to show up on every other terminal
+# whose statusline rendered within the 5s TTL.
+#
+# We simulate "another active session" by pre-populating the OLD global cache
+# path with a sentinel branch + fresh mtime. The fixed code keys the cache by
+# DIR, so it ignores the global file entirely and renders the test DIR's real
+# branch. The buggy code reads the global file and renders the sentinel.
+#
+# Robust against an actually-running Claude session on the same machine: even
+# if a live session keeps overwriting the global file, the fixed code never
+# reads it, so the assertion `grep real-branch` holds.
+# ─────────────────────────────────────────────────────────────────────────────
+DIR=$(mktemp -d)
+git -C "$DIR" init -q -b real-branch-sentinel 2>/dev/null
+git -C "$DIR" config user.email "t@t.test"
+git -C "$DIR" config user.name "t"
+git -C "$DIR" commit --allow-empty -q -m init 2>/dev/null
+
+# Pre-populate the OLD global cache file with a different branch + fresh mtime,
+# simulating another terminal's recent statusline render.
+echo "other-session-branch|0|0" > /tmp/cc-statusline-git
+touch /tmp/cc-statusline-git
+
+# Also clear any per-dir cache files from prior runs of this test
+find /tmp -maxdepth 1 -name 'cc-statusline-git-*' -delete 2>/dev/null
+
+dir_input=$(jq -nc --arg d "$DIR" '{model:{display_name:"Opus 4.7",id:"claude-opus-4-7"},workspace:{current_dir:$d},cost:{total_duration_ms:0},context_window:{context_window_size:200000,current_usage:{}}}')
+out=$(echo "$dir_input" | "$HOOK" 2>/dev/null)
+
+if echo "$out" | grep -q "real-branch-sentinel"; then
+  echo "PASS: per-dir git cache isolation (no cross-session branch bleed)"; PASS=$((PASS + 1))
+else
+  # Strip ANSI for a readable failure dump
+  stripped=$(echo "$out" | head -1 | sed $'s/\033\\[[0-9;]*m//g')
+  echo "FAIL: DIR's own branch not rendered — line 1: $stripped"; FAIL=$((FAIL + 1))
+fi
+
+rm -rf "$DIR"
+find /tmp -maxdepth 1 -name 'cc-statusline-git*' -delete 2>/dev/null
+
 summary
