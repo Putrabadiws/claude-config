@@ -37,8 +37,10 @@ case "$DIR" in
   */*-chart*|*/charts/*)               PLATFORM="${DIM}☸️ Helm${RESET}" ;;
 esac
 
-# Git info (cached)
-CACHE_FILE="/tmp/cc-statusline-git"
+# Git info (cached per DIR — a single global cache file would bleed branches
+# across terminals: session A's statusline write would be read by session B
+# within the TTL, showing A's branch on B. Key by SHA of $DIR to isolate.)
+CACHE_FILE="/tmp/cc-statusline-git-$(printf '%s' "$DIR" | shasum | cut -c1-12)"
 CACHE_MAX_AGE=5
 
 cache_is_stale() {
