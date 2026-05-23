@@ -27,7 +27,7 @@ if echo "$CMD_TOKENS" | grep -qiE '\b(psql|redis-cli|mongo|mongosh)\b'; then
   IS_DB_TOOL=true
 fi
 # For curl, check the full command for DB port patterns (port is in args, not the binary name)
-if echo "$CMD_TOKENS" | grep -qiE '\bcurl\b' && echo "$COMMAND" | grep -qiE '(9200|9300|opensearch|elasticsearch)'; then
+if echo "$CMD_TOKENS" | grep -qiE '\bcurl\b' && echo "$COMMAND" | grep -qiE '(\b9200\b|\b9300\b|opensearch|elasticsearch)'; then
   IS_DB_TOOL=true
 fi
 if [ "$IS_DB_TOOL" = false ]; then

@@ -30,4 +30,11 @@ run_test "block mongo insert"                      'mongosh --eval "db.users.ins
 run_test "empty command"                           '' 0
 run_test "psql with pipe to python"                'psql -c "SELECT id FROM users" | python3 -c "import sys; print(sys.stdin.read().replace(\"a\",\"b\"))"' 0
 
+# Regression: curl to non-DB endpoint must not trigger IS_DB_TOOL via substring port match.
+# `2592000` (Keycloak clientSessionMaxLifespan) contains substring `9200` — must be skipped
+# by \b9200\b anchoring. If this regresses, downstream SQL/Redis keyword checks fire on the
+# echo banners that follow the first pipe (sed strips per-line, not whole command).
+run_test "allow curl Keycloak with 2592000 lifespan" 'curl -X PUT https://sso.example.com/admin/realms/foo -d {"attributes":{"clientSessionMaxLifespan":"2592000"}}; echo "=== Update poc-test realm ==="' 0
+run_test "allow curl with port-like substring 192000" 'curl -X GET https://api.example.com/x?ttl=192000' 0
+
 summary
