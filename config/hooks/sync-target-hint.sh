@@ -26,8 +26,18 @@ case "$FILE_PATH" in
   *) exit 0 ;;
 esac
 
-BASENAME=$(basename "$FILE_PATH")
-[ -z "$BASENAME" ] && exit 0
+REL="${FILE_PATH#$HOME/.claude/}"
+[ -z "$REL" ] && exit 0
+
+# Map source path to its exact target in each sync repo. Anchoring on the full
+# relative path (not basename) avoids the collision case where the same filename
+# exists in many sibling folders — e.g. SKILL.md under every config/skills/<name>/.
+# ~/.claude/mcp/<svc>/... and ~/.claude/integrations/<svc>/... map to parallel
+# trees in the repo; everything else maps under config/.
+case "$REL" in
+  mcp/*|integrations/*) TARGET_REL="$REL" ;;
+  *)                    TARGET_REL="config/$REL" ;;
+esac
 
 if [ -n "$SYNC_HINT_REPOS_OVERRIDE" ]; then
   IFS=':' read -ra REPOS <<< "$SYNC_HINT_REPOS_OVERRIDE"
@@ -40,20 +50,14 @@ fi
 MATCHES=""
 for repo in "${REPOS[@]}"; do
   [ -d "$repo" ] || continue
+  [ -f "$repo/$TARGET_REL" ] || continue
   repo_name=$(basename "$repo")
-  for tree in config mcp integrations; do
-    [ -d "$repo/$tree" ] || continue
-    while IFS= read -r found; do
-      [ -z "$found" ] && continue
-      rel="${found#$repo/}"
-      MATCHES="${MATCHES}  ${repo_name}: ${rel}"$'\n'
-    done < <(find "$repo/$tree" -maxdepth 6 -type f -name "$BASENAME" 2>/dev/null)
-  done
+  MATCHES="${MATCHES}  ${repo_name}: ${TARGET_REL}"$'\n'
 done
 
 [ -z "$MATCHES" ] && exit 0
 
-MSG="Sync targets for ${BASENAME}:"$'\n'"$MATCHES"
+MSG="Sync targets for ${REL}:"$'\n'"$MATCHES"
 jq -n --arg msg "$MSG" '{
   systemMessage: $msg,
   hookSpecificOutput: {
