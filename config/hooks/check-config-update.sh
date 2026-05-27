@@ -1,5 +1,5 @@
 #!/bin/bash
-# Checks if ib-claude-config repo has new commits on origin/main
+# Checks if the team config repo (from .config-repo-path) has new commits on origin/main
 # Runs at session startup only (not resume/compact), with 24h cooldown
 # Exit 0 always — never blocks session start
 source "$(dirname "$0")/path-bootstrap.sh"
@@ -19,6 +19,7 @@ if [ ! -f "$REPO_PATH_FILE" ]; then
 fi
 
 REPO_PATH=$(cat "$REPO_PATH_FILE" | tr -d '[:space:]')
+REPO_NAME=$(basename "$REPO_PATH")  # derive name so this hook is repo-agnostic
 
 if [ ! -d "$REPO_PATH/.git" ]; then
   jq -n '{"suppressOutput": true}'
@@ -92,7 +93,7 @@ echo "$COMMIT_COUNT" > "$PENDING_FILE"
 # Inject context for Claude
 CONTEXT="TEAM CONFIG UPDATE AVAILABLE
 
-ib-claude-config has ${COMMIT_COUNT} new commit(s) on origin/main not yet applied to ~/.claude/.
+${REPO_NAME} has ${COMMIT_COUNT} new commit(s) on origin/main not yet applied to ~/.claude/.
 
 New commits:
 ${COMMIT_LOG}
@@ -100,7 +101,7 @@ ${COMMIT_LOG}
 Changed config files:
 ${CHANGED_FILES}
 
-Inform the user about this update and suggest they run /rnd-update-config to sync their local config.
+Inform the user about this update and suggest they run /bangor-sync-config to sync their local config.
 Do NOT auto-invoke the skill — wait for the user to explicitly run it."
 
 jq -n --arg ctx "$CONTEXT" '{

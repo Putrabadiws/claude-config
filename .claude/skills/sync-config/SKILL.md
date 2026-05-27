@@ -7,12 +7,12 @@ allowed-tools: Bash(git *), Bash(gh *), Bash(cp *), Bash(chmod *), Bash(diff *),
 
 # Canonical Sync (`/sync-config`)
 
-Sync local `~/.claude/` config with the team's `bangor-claude-config` repo. Invoked indirectly via the wrapper at `~/.claude/skills/sync-config/SKILL.md` — the wrapper pulls the latest repo, then reads this file and follows its instructions.
+Sync local `~/.claude/` config with the team's config repo. Invoked indirectly via the wrapper at `~/.claude/skills/sync-config/SKILL.md` — the wrapper pulls the latest repo, then reads this file and follows its instructions.
 
 ## Pre-flight
 
 1. Read `~/.claude/.config-repo-path` to get the repo location
-2. If file doesn't exist → ask user for the path to their `bangor-claude-config` clone, then write it to `~/.claude/.config-repo-path`
+2. If file doesn't exist → ask user for the path to their team config repo clone, then write it to `~/.claude/.config-repo-path`
 3. Verify the path exists and is a git repo
 
 ## Step 1: Prepare the repo
@@ -20,7 +20,7 @@ Sync local `~/.claude/` config with the team's `bangor-claude-config` repo. Invo
 1. Check `git -C <repo> status` for uncommitted changes (tracked and untracked)
 2. If uncommitted changes exist:
    - Show the user what's dirty
-   - `git -C <repo> stash push -m "bangor-sync-config: auto-stash before sync"`
+   - `git -C <repo> stash push -m "config-sync: auto-stash before sync"`
    - Track that we stashed (need to pop later)
 3. `git -C <repo> checkout main`
 4. `git -C <repo> pull origin main`
@@ -262,7 +262,7 @@ AskUserQuestion:
   header: "Sync-back"
   options:
     - label: "Sync to repo"
-      description: "Copy local improvements to bangor-claude-config and open a PR"
+      description: "Copy local improvements to the team repo and open an MR/PR"
     - label: "Skip"
       description: "Keep local only, don't sync to team"
 ```
@@ -298,7 +298,7 @@ AskUserQuestion:
 
 After all individual items are confirmed, execute sync-back for approved items:
 
-1. In the bangor-claude-config repo, create a single branch for all sync-backs:
+1. In the team repo, create a single branch for all sync-backs:
    ```
    git checkout -b sync/local-improvements-<date>
    ```

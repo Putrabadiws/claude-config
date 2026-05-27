@@ -1,6 +1,6 @@
 ---
 name: style-frontend-vite
-description: React+Vite frontend style - Redux, Keycloak auth, useAxios, service hooks. For ib-dashboard, corvus-2-admin-dashboard-ui, frontend-chatbot.
+description: React+Vite frontend style - Redux, Keycloak auth, useAxios, service hooks.
 user-invocable: false
 ---
 
@@ -8,8 +8,7 @@ Base React patterns are in the `style-react` skill. This skill covers Vite-speci
 
 # React + Vite Frontend Style Guide
 
-Codebase-specific patterns for Vite-based frontends:
-`ib-dashboard` (Orion), `corvus-2-admin-dashboard-ui` (Corvus Admin), `frontend-chatbot` (Bron Widget).
+Patterns for Vite-based frontends, covering two common shapes: a Redux-based admin dashboard and a Zustand-based embeddable widget.
 
 ## Prettier/ESLint Overrides
 
@@ -20,13 +19,12 @@ Extends `style-react` defaults. Key differences:
 
 ## Project Structure
 
-### ib-dashboard / corvus-2-admin-dashboard-ui
+### Redux-based admin dashboard
 
 ```
 src/
   api/              # SERVICE config + useXxxService hooks
-  componentsv2/     # Reusable components (ib-dashboard)
-  components/       # Reusable components (corvus-admin)
+  components/       # Reusable components
   pages/            # Route-level page components
   store/slices/     # Redux Toolkit slices
   utils/hooks/      # useAxios, usePagination, etc.
@@ -36,15 +34,15 @@ src/
   routes/           # PrivateRoute, RoleBasedRoute
 ```
 
-### frontend-chatbot
+### Zustand-based widget
 
 ```
 src/
-  Chatbot/          # Main widget components
+  Widget/           # Main widget components
   components/       # Reusable components
   store/            # Zustand stores (NOT Redux)
   utils/            # useFetch, SSE stream, encryption
-  style/            # Tailwind with cbt- prefix
+  style/            # Tailwind with a component prefix (e.g. `cbt-`)
 ```
 
 Component folder structure follows `style-react` conventions (PascalCase, optional `.module.css`, `__tests__/`, barrel export).
@@ -61,7 +59,6 @@ const SERVICE = {
   backend: `${BASE_URL}/backend/api/v1`,
   user: `${BASE_URL}/user/api/v1`,
   minio: `${BASE_URL}/minio/api/v1/s3`,
-  sensor: `${BASE_URL}/sensor/api/v1`,
   // ... per microservice
 };
 export default SERVICE;
@@ -74,26 +71,26 @@ import useAxios from "@/utils/hooks/useAxios";
 import SERVICE from ".";
 import { transformObjIntoParams } from "@/utils/transformObjIntoParams";
 
-const useAlertService = () => {
+const useItemService = () => {
   const axios = useAxios(SERVICE.backend);
 
-  const fetchAlerts = async (date, params, payload) => {
+  const fetchItems = async (date, params, payload) => {
     const { data } = await axios.post(
-      `/alert/${date.startDate}/${date.endDate}?${transformObjIntoParams(params)}`,
+      `/item/${date.startDate}/${date.endDate}?${transformObjIntoParams(params)}`,
       payload
     );
     return data;
   };
 
-  const fetchAlertById = async (id) => {
-    const { data } = await axios.get(`/alert/data/${id}`);
+  const fetchItemById = async (id) => {
+    const { data } = await axios.get(`/item/data/${id}`);
     return data.data[0];
   };
 
-  return { fetchAlerts, fetchAlertById };
+  return { fetchItems, fetchItemById };
 };
 
-export default useAlertService;
+export default useItemService;
 ```
 
 ## useAxios Hook
@@ -135,7 +132,7 @@ const useAxios = (baseURL) => {
 
 ## State Management
 
-### Redux Toolkit + Persist (ib-dashboard, corvus-2-admin)
+### Redux Toolkit + Persist
 
 ```javascript
 import { createSlice } from "@reduxjs/toolkit";

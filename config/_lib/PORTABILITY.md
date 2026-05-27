@@ -59,7 +59,6 @@ Legend: ✓ verified pass / ✗ verified fail / ? untested
 | `docs-check.sh` | ✓ | ? | ? | grep -E with `\s` |
 | `gitlab-github-context.sh` | ✓ | ? | ? | Unified gitlab/github dispatcher on remote URL; POSIX [[:space:]] used |
 | `inject-claude-version.sh` | ✓ | ? | ? | sed with placeholder substitution — portable |
-| `intellibron-context.sh` | ✓ | ? | ? | POSIX [[:space:]] used; per-platform flag scheme |
 | `lint-check.sh` | ✓ | ? | ? | Calls external linters; depends on installed tools |
 | `path-bootstrap.sh` | ✓ | ? | ✓ (has Windows branch) | OS-detection model script |
 | `regex-self-check.sh` | ✓ | ? | ? | grep -E content detection |

@@ -1,6 +1,6 @@
 #!/bin/bash
 # Tests for check-config-update.sh — SessionStart hook checking for new commits
-# on origin/main of the ib-claude-config repo. Uses HOME-redirected fake state.
+# on origin/main of the team config repo. Uses HOME-redirected fake state.
 # Run: bash ~/.claude/hooks/check-config-update.test.sh
 
 source "$HOME/.claude/_lib/test-helpers.sh"

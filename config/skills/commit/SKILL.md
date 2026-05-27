@@ -23,11 +23,11 @@ Scope: service name or component
 
 ### Examples
 ```
-feat(mdr): add alert bulk update endpoint
-fix(dns-resolver): handle nil pointer in cache lookup
-docs(corvus): update API documentation
-refactor(aegis): extract embedding logic to service
-test(fates): add unit tests for document processor
+feat(auth): add token refresh endpoint
+fix(api): handle nil pointer in cache lookup
+docs(readme): update API documentation
+refactor(orders): extract pricing logic to service
+test(orders): add unit tests for checkout flow
 chore(deps): upgrade spring boot to 3.3.1
 ```
 

@@ -21,6 +21,6 @@ paths:
 - Use `pydantic-settings` for config
 - Celery tasks: sync function with `asyncio.run()` inside
 
-## Bron AI Specific
-- Qdrant vectors: 768 dimensions (Gemini embeddings)
-- Don't pass DB sessions to Celery tasks
+## Async/Worker Patterns
+- Vector embeddings: match your store's configured dimension (e.g. 768 / 1536)
+- Don't pass DB sessions to Celery tasks — pass IDs and re-fetch inside the task

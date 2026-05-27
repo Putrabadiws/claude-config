@@ -230,7 +230,7 @@ emit_section "NEW IN REPO (apply to local)" "$NEW_REPO_LIST"
 if [ -s "$NEW_LOCAL_LIST" ]; then
   echo "=== NEW IN LOCAL ==="
   echo "Files present locally but not in the team repo. Investigate each one:"
-  echo "if the change is worth sharing, sync it back to ib-claude-config and open an MR."
+  echo "if the change is worth sharing, sync it back to the team repo and open an MR/PR."
   echo "Otherwise leave it as a personal customization."
   echo
   sort -u "$NEW_LOCAL_LIST"

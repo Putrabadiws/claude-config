@@ -69,19 +69,6 @@ workflow:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event" && ($CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "develop" || $CI_MERGE_REQUEST_TARGET_BRANCH_NAME =~ /^release/)
 
 include:
-  - component: gitlab.dev.candradimuka/devsecops/ci-components/<name>@~latest
+  - component: gitlab.example.com/<group>/ci-components/<name>@~latest
 ```
-Available: maven-test-coverage, maven-coverage-gate, go-build-test, nodejs-test-coverage, nodejs-eslint-check, aikido-sast, sonarqube-scan, docker-build-push, owasp-dependency-check, changelog-release, swiftlint-check, android-build-release, maven-spotless-check
-
-## Connection Issues
-
-GitLab (`gitlab.dev.candradimuka`) occasionally fails to connect - retry is normal.
-If still failing, check and reconnect VPN automatically (don't ask the user):
-- **macOS**: `scutil --nc list` → if disconnected, `scutil --nc start "Ziti Desktop Edge 2"` → wait ~5s → retry
-- **Windows**: `ipconfig | findstr /i "Ziti"` or check Ziti Desktop Edge in system tray
-
-### SSH vs HTTP
-
-- SSH (port 22) is **not available** on `gitlab.dev.candradimuka` — connections are refused
-- Always use **HTTP** URLs for clone/push/pull: `http://gitlab.dev.candradimuka/<group>/<repo>.git`
-- Existing repos already use HTTP remotes
+Reference your team's shared CI components catalog for the available component names.

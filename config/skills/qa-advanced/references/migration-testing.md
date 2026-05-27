@@ -8,7 +8,7 @@ Migrations that work in dev frequently break in production due to:
 - Index creation timing
 - Rollback assumptions
 
-## Liquibase (Java/Spring — Orion, Corvus, Aman)
+## Liquibase (Java/Spring)
 
 ```java
 // tests/integration/migrations/AddDeviceBlockedColumnTest.java
@@ -38,7 +38,7 @@ class AddDeviceBlockedColumnTest {
 }
 ```
 
-## Alembic (Python/FastAPI — Bron AI backend-fates)
+## Alembic (Python/FastAPI)
 
 ```python
 # tests/integration/test_migrations.py

@@ -124,7 +124,7 @@ Target: flaky rate < 2% of CI runs. Zero tolerance for quarantine > 2 sprints.
 
 ## Mobile-Specific Flakiness
 
-See [references/mobile.md](references/mobile.md) for Appium/Aman-specific causes, retry config, pre-test device setup, and mobile flaky rate tracking.
+See [references/mobile.md](references/mobile.md) for Appium/mobile-specific causes, retry config, pre-test device setup, and mobile flaky rate tracking.
 
 ---
 

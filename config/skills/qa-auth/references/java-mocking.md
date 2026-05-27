@@ -2,10 +2,9 @@
 
 ## BaseControllerTests Pattern
 
-Used by: Corvus, Orion, Aman Spring Boot services. Disables security filters and provides a MockServer for Keycloak JWKS.
+Pattern for Spring Boot services. Disables security filters and provides a MockServer for Keycloak JWKS.
 
 ```java
-// Used by: Corvus, Orion, Aman Spring Boot services
 @SpringBootTest
 @AutoConfigureMockMvc(addFilters = false)  // Disable security filters
 public abstract class BaseControllerTests {

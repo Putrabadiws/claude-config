@@ -20,6 +20,6 @@ paths:
 - Context as first parameter
 - Constructor functions: `NewXxx()`
 
-## DNS Resolver Specific (Aman)
-- Redis key patterns: `dns-blocked:{domain}`, `trust-domain:{ulid}:{domain}`
+## Service Patterns
+- Namespace Redis keys by entity, e.g. `<entity>:{id}:{field}`
 - Use `slog` for structured logging

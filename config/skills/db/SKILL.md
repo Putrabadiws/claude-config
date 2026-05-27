@@ -46,58 +46,28 @@ FROM pg_stat_activity WHERE state != 'idle' ORDER BY duration DESC;
 SELECT pg_terminate_backend(<pid>);
 ```
 
-### Platform-Specific
+### Service Databases
 
-| Platform | Database | Key Tables |
+Document each service's database and key tables here so queries don't require guessing the schema. Example shape:
+
+| Service | Database | Key Tables |
 |----------|----------|------------|
-| Orion | `ib_soc_mdr` | `alerts`, `cases`, `companies`, `users` |
-| Corvus | `corvus` | `reports`, `iocs`, `feeds` |
-| Aman | `internet-aman` | `categories`, `category_sources`, `blocklist`, `whitelist_sources`, `whitelists`, `user_categories`, `user_domains`, `parental_apps`, `parental_app_domains`, `user_parental_apps`, `user_parental_app_schedules`, `log_activities` |
-| Aman | `dns` | `licenses`, `devices`, `profiles`, `companies`, `company_topups`, `profile_licenses` |
-| Bron AI | `fates`, `aegis`, `audit` | `documents`, `agents`, `api_keys` |
+| `<service>` | `<db_name>` | `<table1>`, `<table2>`, … |
 
-### Aman Schema Quick Reference
+### Schema Quick Reference
 
-TimescaleDB pod requires `-c timescale` container flag:
+If a service runs a non-default container (e.g. TimescaleDB), pass the container flag:
 ```bash
-kubectl --context $CTX -n $NS exec -c timescale $TS_POD -- psql -U postgres -d internet-aman -c "..."
+kubectl --context $CTX -n $NS exec -c <container> $POD -- psql -U postgres -d <db> -c "..."
 ```
 
-Key tables and their columns:
+Capture key tables, columns, PKs and FKs so queries are unambiguous. Example:
 
 ```
-categories (id, name, severity, description, created_at/by, updated_at/by)
+<table> (id, name, status, created_at/by, updated_at/by)
   PK: id
   UNIQUE: name
-
-category_sources (id, category_id, source_type, end_point, status, content_hash, created_at/by, updated_at/by)
-  PK: (id, category_id)
-  FK: category_id → categories(id)
-  status: 'Active' | 'Inactive'
-
-blocklist (domain, category, category_source_id)
-  PK: (domain, category, category_source_id)
-  FK: category → categories(id)
-  -- same domain can appear in multiple categories/sources
-
-whitelist_sources (id, source_type, end_point, status, content_hash, created_at/by, updated_at/by)
-
-whitelists (domain, whitelist_source_id)
-```
-
-Common Aman queries:
-```sql
--- List all category sources with category names
-SELECT cs.id, cs.source_type, cs.end_point, cs.status, cs.content_hash, c.name AS category, c.severity
-FROM category_sources cs JOIN categories c ON cs.category_id = c.id
-ORDER BY c.name, cs.id;
-
--- Blocklist count by category/source
-SELECT category, category_source_id, count(*) FROM blocklist
-GROUP BY category, category_source_id ORDER BY category, category_source_id;
-
--- Total unique blocked domains
-SELECT count(DISTINCT domain) FROM blocklist;
+  FK: <col> → <other_table>(id)
 ```
 
 ---
@@ -143,13 +113,11 @@ DEL <key>
 FLUSHDB
 ```
 
-### Platform Key Patterns
+### Key Patterns
 
-| Platform | Key Pattern | Purpose |
+| Service | Key Pattern | Purpose |
 |----------|-------------|---------|
-| Orion | `alert:*`, `sensor:*`, `company:*` | Cache |
-| Aman | `dns-blocked:*`, `trust-domain:*`, `parental:*` | DNS filtering |
-| Bron AI | `session:*`, `quota:*`, `metrics:*` | Sessions/quotas |
+| `<service>` | `cache:*`, `session:*` | Cache / sessions |
 
 ---
 
@@ -186,16 +154,11 @@ curl -s localhost:9200/<index>/_count
 curl -X DELETE localhost:9200/<index>
 ```
 
-### Platform Indices
+### Index Patterns
 
-| Platform | Index Pattern | Content |
+| Service | Index Pattern | Content |
 |----------|---------------|---------|
-| Orion | `arkime_sessions3-*` | Network sessions |
-| Orion | `mdr-alerts-*` | Alert data |
-| Aman | `dns_request-*` | DNS query logs (daily: `dns_request-YYYYMMDD`) |
-| Aman | `dns_events-*` | DNS on/off events (daily) |
-| Aman | `top_queries-*` | Top query aggregations (daily) |
-| Bron AI | `bron-metrics-*` | Usage metrics |
+| `<service>` | `<index>-*` | Logs / events (daily rotation: `<index>-YYYYMMDD`) |
 
 ---
 
