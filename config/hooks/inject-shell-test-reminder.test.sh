@@ -107,4 +107,12 @@ else
   echo "FAIL: should exit 0 (rc=$rc)"; FAIL=$((FAIL + 1))
 fi
 
+# systemMessage on .sh edit (added in output rework)
+out=$(invoke "Write" "/tmp/sm-check-$RANDOM.sh")
+if echo "$out" | jq -e '.systemMessage' >/dev/null 2>&1 && echo "$out" | grep -q "🧪"; then
+  echo "PASS: emits 🧪 systemMessage on .sh edit"; PASS=$((PASS + 1))
+else
+  echo "FAIL: expected 🧪 systemMessage, got: $out"; FAIL=$((FAIL + 1))
+fi
+
 summary

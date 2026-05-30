@@ -101,4 +101,13 @@ fi
 
 run_path_test "edge: tilde-prefixed file_path"          "~/.claude/hooks/foo.sh"               "bangor-claude-config: config/hooks/foo.sh" match
 
+# systemMessage is the tight repo-name list (added in output rework);
+# additionalContext keeps the full paths (asserted by the match tests above).
+stdout=$(jq -n --arg fp "$HOME/.claude/hooks/foo.sh" '{tool_name:"Edit",tool_input:{file_path:$fp}}' | "$HOOK" 2>/dev/null)
+sm=$(echo "$stdout" | jq -r '.systemMessage' 2>/dev/null)
+case "$sm" in
+  "🔄 Sync → "*) echo "PASS: systemMessage is tight '🔄 Sync → …' line"; PASS=$((PASS + 1)) ;;
+  *)            echo "FAIL: expected '🔄 Sync → …' systemMessage, got: $sm"; FAIL=$((FAIL + 1)) ;;
+esac
+
 summary

@@ -104,7 +104,9 @@ ${CHANGED_FILES}
 Inform the user about this update and suggest they run /bangor-sync-config to sync their local config.
 Do NOT auto-invoke the skill — wait for the user to explicitly run it."
 
-jq -n --arg ctx "$CONTEXT" '{
+jq -n --arg ctx "$CONTEXT" \
+  --arg msg "⬆️ Team config: ${COMMIT_COUNT} new commit(s) — run /bangor-sync-config" '{
+  systemMessage: $msg,
   hookSpecificOutput: {
     hookEventName: "SessionStart",
     additionalContext: $ctx

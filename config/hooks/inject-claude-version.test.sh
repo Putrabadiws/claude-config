@@ -19,10 +19,16 @@ cat > "$TRANSCRIPT" <<EOF
 EOF
 export CLAUDE_CODE_VERSION="2.1.143"
 
-# Helper: invoke with command + transcript, return stdout
+# Helper: invoke with command + transcript, return stdout.
+# Isolate HOME so the hook does NOT source the real ~/.claude/.session-env, whose
+# CLAUDE_CODE_VERSION has highest precedence by design and would override the
+# test's exported 2.1.143 (this session wrote the live version there). Fake HOME
+# has no .session-env, so the exported CLAUDE_CODE_VERSION wins deterministically.
 invoke_hook() {
   local cmd="$1"
-  jq -n --arg c "$cmd" --arg t "$TRANSCRIPT" '{tool_input:{command:$c},transcript_path:$t}' | "$HOOK" 2>/dev/null
+  local fake_home; fake_home=$(mktemp -d)
+  jq -n --arg c "$cmd" --arg t "$TRANSCRIPT" '{tool_input:{command:$c},transcript_path:$t}' | HOME="$fake_home" "$HOOK" 2>/dev/null
+  rm -rf "$fake_home"
 }
 
 # Stage 1 — early exit: non-commit/MR/PR commands ignored
@@ -150,6 +156,22 @@ if echo "$updated" | grep -q "2.1.143"; then
   echo "PASS: gh pr create — Branch A fires"; PASS=$((PASS + 1))
 else
   echo "FAIL: gh pr create not handled"; FAIL=$((FAIL + 1))
+fi
+
+# systemMessage only on mismatch (added in output rework) — "silent unless mismatch"
+out=$(invoke_hook 'git commit -m "msg ✨ Generated with Claude Code (claude.ai/claude-code) 0.0.1 (claude-opus-4-7)"')
+if echo "$out" | jq -e '.systemMessage' >/dev/null 2>&1 && echo "$out" | grep -q "🔖 Attribution mismatch"; then
+  echo "PASS: mismatch emits 🔖 systemMessage"; PASS=$((PASS + 1))
+else
+  echo "FAIL: expected 🔖 systemMessage on mismatch, got: $out"; FAIL=$((FAIL + 1))
+fi
+
+# Correct attribution → NO systemMessage (stays silent)
+out=$(invoke_hook 'git commit -m "msg ✨ Generated with Claude Code (claude.ai/claude-code) 2.1.143 (claude-opus-4-7)"')
+if ! echo "$out" | grep -q "systemMessage"; then
+  echo "PASS: correct attribution → no systemMessage"; PASS=$((PASS + 1))
+else
+  echo "FAIL: correct attribution should be silent, got: $out"; FAIL=$((FAIL + 1))
 fi
 
 # Cleanup

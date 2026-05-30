@@ -48,8 +48,8 @@ while IFS= read -r subcmd; do
       *-claude-config*|*/.claude/*)
         case "$path" in
           *.json)
-            echo "BLOCKED: cp targets a .json file in a claude-config repo." >&2
-            echo "JSON has no comments to mark local-only sections — use the Edit tool." >&2
+            echo "⛔ cp into a claude-config .json blocked — use the Edit tool" >&2
+            echo "  (JSON can't carry local-only markers)" >&2
             exit 2
             ;;
         esac
@@ -57,8 +57,8 @@ while IFS= read -r subcmd; do
     esac
     # Marker gate: applies to source and destination regardless of side.
     if [ -f "$expanded" ] && grep -qE "$MARKER_REGEX" "$expanded"; then
-      echo "BLOCKED: file contains local-only marker (${MARKER_KW}): $path" >&2
-      echo "Use the Edit tool for surgical replace — cp would clobber context-specific content." >&2
+      echo "⛔ cp blocked — $path carries a ${MARKER_KW} marker" >&2
+      echo "  Use Edit (cp would clobber local-only content)" >&2
       exit 2
     fi
   done

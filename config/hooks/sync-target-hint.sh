@@ -48,21 +48,25 @@ else
 fi
 
 MATCHES=""
+REPO_NAMES=""
 for repo in "${REPOS[@]}"; do
   [ -d "$repo" ] || continue
   [ -f "$repo/$TARGET_REL" ] || continue
   repo_name=$(basename "$repo")
   MATCHES="${MATCHES}  ${repo_name}: ${TARGET_REL}"$'\n'
+  [ -z "$REPO_NAMES" ] && REPO_NAMES="$repo_name" || REPO_NAMES="$REPO_NAMES, $repo_name"
 done
 
 [ -z "$MATCHES" ] && exit 0
 
+# systemMessage = tight repo-name list for the user; additionalContext keeps the
+# full source→target paths so Claude knows exactly what to sync.
 MSG="Sync targets for ${REL}:"$'\n'"$MATCHES"
-jq -n --arg msg "$MSG" '{
-  systemMessage: $msg,
+jq -n --arg sm "🔄 Sync → ${REPO_NAMES}" --arg ctx "$MSG" '{
+  systemMessage: $sm,
   hookSpecificOutput: {
     hookEventName: "PostToolUse",
-    additionalContext: $msg
+    additionalContext: $ctx
   }
 }'
 exit 0

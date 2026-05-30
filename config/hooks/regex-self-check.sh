@@ -37,6 +37,7 @@ CONTENT=$(echo "$INPUT" | jq -r '.tool_input.new_string // .tool_input.content /
 #   - regex metacharacter escapes (\s, \S, \d, \D, \w, \W, \b, \B) — single backslash
 if echo "$CONTENT" | grep -qE 'grep\s+-[A-Za-z]*[EP]|sed\s+(s/|-E)|re\.(compile|match|search|findall|sub)\(|RegExp\(|\\(s|S|d|D|w|W|b|B)\b'; then
   jq -n '{
+    "systemMessage": "🔍 Regex edited — anchor to structure + test adversarial inputs",
     "hookSpecificOutput": {
       "hookEventName": "PreToolUse",
       "additionalContext": "REGEX DETECTED. Before this edit lands, your response MUST state: (1) the STRUCTURAL anchor your regex uses (e.g. command boundary, line start, word boundary, separator) — substring matches over structured input are fragile; (2) at least two ADVERSARIAL benign inputs (text that contains the pattern as substring but should NOT match) and verify the regex skips them. If either is missing, the regex is half-baked — rewrite."

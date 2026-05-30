@@ -60,4 +60,12 @@ else
   echo "FAIL: non-test .sh should have triggered"; FAIL=$((FAIL + 1))
 fi
 
+# systemMessage on regex detect (added in output rework)
+stdout=$(jq -n --arg c 'grep -qE "\d+"' --arg f /tmp/foo.sh '{tool_name:"Edit",tool_input:{new_string:$c,file_path:$f}}' | "$HOOK" 2>/dev/null)
+if echo "$stdout" | jq -e '.systemMessage' >/dev/null 2>&1 && echo "$stdout" | grep -q "🔍"; then
+  echo "PASS: emits 🔍 systemMessage on regex"; PASS=$((PASS + 1))
+else
+  echo "FAIL: expected 🔍 systemMessage, got: $stdout"; FAIL=$((FAIL + 1))
+fi
+
 summary

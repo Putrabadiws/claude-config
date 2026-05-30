@@ -51,8 +51,13 @@ if $MATCHED; then
   touch "$FLAG"
   CTX=$(cat ~/.claude/hooks/bangor-context.md 2>/dev/null || echo "")
   if [ -n "$CTX" ]; then
-    CTX_JSON=$(echo "$CTX" | jq -Rs .)
-    echo "{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"additionalContext\":$CTX_JSON}}"
+    jq -n --arg ctx "$CTX" --arg msg "📚 Loaded context: Bangor" '{
+      systemMessage: $msg,
+      hookSpecificOutput: {
+        hookEventName: "PreToolUse",
+        additionalContext: $ctx
+      }
+    }'
     exit 0
   fi
 fi

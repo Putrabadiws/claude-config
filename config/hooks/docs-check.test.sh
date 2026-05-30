@@ -74,4 +74,18 @@ else
   echo "PASS: empty staging → no reminder"; PASS=$((PASS + 1))
 fi
 
+# systemMessage carries the short doc-name list (added in output rework)
+tmp=$(mktemp -d)
+( cd "$tmp" && git init -q && git config user.email t@t && git config user.name t ) >/dev/null 2>&1
+mkdir -p "$tmp/docs" "$tmp/src"
+echo stub > "$tmp/src/UserController.java"
+( cd "$tmp" && git add src/UserController.java ) >/dev/null 2>&1
+stdout=$(cd "$tmp" && jq -n --arg c 'git commit -m "x"' '{tool_input:{command:$c}}' | "$HOOK" 2>/dev/null)
+rm -rf "$tmp"
+if echo "$stdout" | jq -e '.systemMessage' >/dev/null 2>&1 && echo "$stdout" | grep -q "📝 Docs may need updating: API"; then
+  echo "PASS: emits '📝 Docs may need updating: API' systemMessage"; PASS=$((PASS + 1))
+else
+  echo "FAIL: expected 📝 docs systemMessage, got: $stdout"; FAIL=$((FAIL + 1))
+fi
+
 summary

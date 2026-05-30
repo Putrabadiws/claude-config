@@ -82,7 +82,7 @@ SUB_CMD="(^|&&|;|[|]+|\n)\s*(${PREFIXES})*"
 
 # --- Check 1: destructive git commands ---
 if echo "$CMD_CHECK" | grep -qE "${SUB_CMD}git\s+(reset\s+--hard|clean\s+-fd?|branch\s+-D)\b"; then
-  echo "Destructive git command detected. Requires approval." >&2
+  echo "⛔ Destructive git command — requires approval" >&2
   exit 1
 fi
 
@@ -91,7 +91,7 @@ fi
 if echo "$CMD_CHECK" | grep -qE "${SUB_CMD}git\s+push\b" \
    && echo "$CMD_CHECK" | grep -qE '(^|\s)(-f|--force)(\s|$)' \
    && ! echo "$CMD_CHECK" | grep -q '\-\-force-with-lease'; then
-  echo "git push --force detected. Use --force-with-lease or approve." >&2
+  echo "⛔ git push --force — use --force-with-lease or approve" >&2
   exit 1
 fi
 
@@ -99,7 +99,7 @@ fi
 # Trailing context (\s|$|/|;|&|\|) ensures we match /etc, /etc/subdir, /etc;cmd
 # but NOT /etc-bak or other user-named paths starting with /etc-something.
 if echo "$CMD_CHECK" | grep -qiE "${SUB_CMD}rm\s+(-rf|-fr|-r\s+-f|-f\s+-r)\s+(/|/etc|/var|/usr|/System|/Library|/[a-z]/(Windows|Program)|C:\\\\Windows|C:\\\\Program)(\s|$|/|;|&|\|)"; then
-  echo "rm on system root path detected. Requires approval." >&2
+  echo "⛔ rm on system path — requires approval" >&2
   exit 1
 fi
 
@@ -115,7 +115,7 @@ fi
 # both as belt-and-suspenders: removing either weakens defense against future
 # regex drift. Do NOT simplify by deleting one — the overlap is the safety net.
 if echo "$CMD_CHECK" | tr '|&;' '\n' | grep -E '\bxargs\b' | grep -qiE '\brm\s+(-rf|-fr|-r\s+-f|-f\s+-r)\s+(/|/etc|/var|/usr|/System|/Library)(\s|$|/|;|&|\|)'; then
-  echo "rm via xargs targeting system path. Requires approval." >&2
+  echo "⛔ rm via xargs on system path — requires approval" >&2
   exit 1
 fi
 
@@ -125,7 +125,7 @@ fi
 # DB invocations (e.g. `sudo psql -c "DROP TABLE x"`) are correctly caught.
 if echo "$COMMAND" | grep -qiE '(DROP\s+(DATABASE|TABLE|SCHEMA)|TRUNCATE\s+TABLE)'; then
   if get_first_real_tokens "$COMMAND" | grep -qiE '^(psql|mysql|sqlite3?|mongosh?|redis-cli|cqlsh|duckdb|clickhouse-client)$'; then
-    echo "DROP/TRUNCATE database command detected. Requires approval." >&2
+    echo "⛔ DROP/TRUNCATE — requires approval" >&2
     exit 1
   fi
 fi
@@ -134,7 +134,7 @@ fi
 # Verb part anchored; redirect part requires /dev/sd[a-z] real device path.
 if echo "$CMD_CHECK" | grep -qiE "${SUB_CMD}(mkfs\.|dd\s+if=|format\s+[a-z]:|format\.com|diskpart|chmod\s+-R\s+777|chown\s+-R)" \
    || echo "$CMD_CHECK" | grep -qiE '>\s*/dev/sd[a-z]'; then
-  echo "Dangerous system command detected. Requires approval." >&2
+  echo "⛔ Dangerous system command — requires approval" >&2
   exit 1
 fi
 
@@ -145,7 +145,7 @@ ORIG_TOKENS=$(echo "$COMMAND" | tr '|&;' '\n' | sed 's/^[[:space:]]*//' | awk '{
 if echo "$ORIG_TOKENS" | grep -qE '\b(bash|sh|zsh|eval)\b' \
    && echo "$COMMAND" | grep -qE '\b(bash|sh|zsh)\s+-c\b|\beval\b'; then
   if echo "$COMMAND" | grep -qiE '(rm\s+-rf?\s+(/|/etc|/var|/usr|/System|/Library)|git\s+reset\s+--hard|git\s+clean\s+-fd?|git\s+branch\s+-D|mkfs\.|dd\s+if=/dev/(zero|random|urandom)|chmod\s+-R\s+777|chown\s+-R|>\s*/dev/sd[a-z])'; then
-    echo "Destructive command inside bash -c / sh -c / zsh -c / eval. Requires approval." >&2
+    echo "⛔ Destructive command in bash -c/eval — requires approval" >&2
     exit 1
   fi
 fi
