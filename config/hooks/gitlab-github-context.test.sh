@@ -83,4 +83,29 @@ else
   echo "FAIL: cd target should be used over cwd"; FAIL=$((FAIL + 1))
 fi
 
+# systemMessage on fire (added in output rework)
+sid="test-ctx-sm-$$"
+dir=$(mock_git_repo "https://gitlab.com/foo/bar.git")
+stdout=$(jq -n --arg cwd "$dir" --arg sid "$sid" '{cwd:$cwd,session_id:$sid,tool_input:{command:""}}' | "$HOOK" 2>/dev/null)
+rm -rf "$dir" "/tmp/gitlab-rules-injected-${sid}"
+if echo "$stdout" | jq -e '.systemMessage' >/dev/null 2>&1 && echo "$stdout" | grep -q "GitLab rules loaded"; then
+  echo "PASS: emits '📚 GitLab rules loaded' systemMessage"; PASS=$((PASS + 1))
+else
+  echo "FAIL: expected GitLab systemMessage, got: $stdout"; FAIL=$((FAIL + 1))
+fi
+
+# Submodule / worktree: .git is a FILE (gitlink), not a dir — must still fire.
+# `git init --separate-git-dir` reproduces exactly that layout.
+realgit=$(mktemp -d); work=$(mktemp -d)
+( cd "$work" && git init -q --separate-git-dir="$realgit" && git remote add origin "https://gitlab.com/foo/bar.git" ) >/dev/null 2>&1
+sid="test-ctx-submodule-$$"
+stdout=$(jq -n --arg cwd "$work" --arg sid "$sid" '{cwd:$cwd,session_id:$sid,tool_input:{command:""}}' | "$HOOK" 2>/dev/null)
+gitfile_kind=$( [ -f "$work/.git" ] && echo file || echo other )
+rm -rf "$work" "$realgit" "/tmp/gitlab-rules-injected-${sid}"
+if [ "$gitfile_kind" = file ] && echo "$stdout" | grep -q "GitLab rules loaded"; then
+  echo "PASS: submodule (.git is a file) still fires"; PASS=$((PASS + 1))
+else
+  echo "FAIL: submodule .git-as-file should fire (gitkind=$gitfile_kind), got: $stdout"; FAIL=$((FAIL + 1))
+fi
+
 summary
