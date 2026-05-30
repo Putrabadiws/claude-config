@@ -346,14 +346,14 @@ logger.Info("request received",
     "client_ip", r.RemoteAddr,
 )
 
-logger.Error("failed to resolve",
+logger.Error("request failed",
     "error", err,
-    "domain", query.Domain,
+    "resource", id,
     "duration_ms", time.Since(start).Milliseconds(),
 )
 ```
 
-## Redis Pattern (Aman)
+## Redis Pattern
 
 ```go
 // Cache interface
@@ -363,16 +363,15 @@ type Cache interface {
     Delete(ctx context.Context, key string) error
 }
 
-// Key patterns
+// Key patterns — namespace by entity
 const (
-    KeyDNSBlocked    = "dns-blocked:%s"      // dns-blocked:example.com
-    KeyTrustDomain   = "trust-domain:%s:%s"  // trust-domain:ulid:domain
-    KeyParental      = "parental:%s:%s"      // parental:ulid:domain
-    KeyDNSCache      = "%s:%d"               // domain:type
+    KeyEntity   = "entity:%s"       // entity:<id>
+    KeyRelation = "relation:%s:%s"  // relation:<id>:<field>
+    KeyCache    = "%s:%d"           // <resource>:<type>
 )
 
-func (c *RedisCache) GetBlocked(ctx context.Context, domain string) (string, error) {
-    key := fmt.Sprintf(KeyDNSBlocked, domain)
+func (c *RedisCache) GetEntity(ctx context.Context, id string) (string, error) {
+    key := fmt.Sprintf(KeyEntity, id)
     return c.client.Get(ctx, key).Result()
 }
 ```

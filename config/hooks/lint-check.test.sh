@@ -88,4 +88,20 @@ else
   echo "FAIL: .lock should suppress"; FAIL=$((FAIL + 1))
 fi
 
+# systemMessage on a real lint failure (added in output rework). shellcheck flags
+# `echo $foo` (SC2086); assert the ⚠️ line + additionalContext both appear.
+if command -v shellcheck >/dev/null 2>&1; then
+  d=$(mktemp -d); bad="$d/bad.sh"
+  printf '#!/bin/bash\nfoo=bar\necho $foo\n' > "$bad"
+  out=$(invoke_lint "$bad")
+  rm -rf "$d"
+  if echo "$out" | jq -e '.systemMessage' >/dev/null 2>&1 && echo "$out" | grep -q "⚠️"; then
+    echo "PASS: lint failure emits ⚠️ systemMessage"; PASS=$((PASS + 1))
+  else
+    echo "FAIL: expected ⚠️ systemMessage on shellcheck failure, got: $out"; FAIL=$((FAIL + 1))
+  fi
+else
+  echo "PASS: (lint ⚠️ systemMessage test skipped — no shellcheck)"; PASS=$((PASS + 1))
+fi
+
 summary

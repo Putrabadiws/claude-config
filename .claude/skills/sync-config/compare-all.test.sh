@@ -69,12 +69,12 @@ rm -rf "$REPO" "$LOCAL"
 read -r REPO LOCAL <<<"$(setup_pair)"
 mkdir -p "$REPO/config/skills/k8s" "$LOCAL/skills/k8s"
 cat > "$REPO/config/skills/k8s/SKILL.md" <<'EOF'
-- Repo: <workspace>/ib-aman-all
-- Helm: <workspace>/ib-orion-chart
+- Repo: <workspace>/service-a
+- Helm: <workspace>/service-b
 EOF
 cat > "$LOCAL/skills/k8s/SKILL.md" <<'EOF'
-- Repo: /Users/test/itsec/ib-aman-all
-- Helm: /Users/test/itsec/ib-orion-chart
+- Repo: /Users/test/work/service-a
+- Helm: /Users/test/work/service-b
 EOF
 out=$("$SCRIPT" "$REPO/config" "$LOCAL" 2>&1)
 expect_contains "pure placeholder drift → SAME" "$out" "SAME: 1"
@@ -91,7 +91,7 @@ cat > "$REPO/config/skills/k8s/SKILL.md" <<'EOF'
 - Repo: <workspace>/new-repo-name
 EOF
 cat > "$LOCAL/skills/k8s/SKILL.md" <<'EOF'
-- Repo: /Users/test/itsec/old-repo-name
+- Repo: /Users/test/work/old-repo-name
 EOF
 out=$("$SCRIPT" "$REPO/config" "$LOCAL" 2>&1)
 expect_contains "real drift in suffix → CHANGED" "$out" "skills/k8s/SKILL.md"
@@ -208,7 +208,7 @@ cat > "$REPO/config/skills/k8s/SKILL.md" <<'EOF'
 - Comment: see <workspace>/docs for details
 EOF
 cat > "$LOCAL/skills/k8s/SKILL.md" <<'EOF'
-- Repo: /Users/test/itsec/foo
+- Repo: /Users/test/work/foo
 - Comment: regular text, no docs reference
 EOF
 out=$("$SCRIPT" "$REPO/config" "$LOCAL" 2>&1)

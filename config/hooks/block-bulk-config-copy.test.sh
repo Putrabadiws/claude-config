@@ -10,10 +10,10 @@ _require_executable "$HOOK"
 TMP=$(mktemp -d)
 PLAIN_SRC="$TMP/plain.md"
 MARKED_SRC="$TMP/marked.md"
-PLAIN_DEST="$TMP/itsec-claude-config/plain.md"
-MARKED_DEST="$TMP/itsec-claude-config/marked.md"
-JSON_DEST="$TMP/itsec-claude-config/settings.json"
-mkdir -p "$TMP/itsec-claude-config"
+PLAIN_DEST="$TMP/team-claude-config/plain.md"
+MARKED_DEST="$TMP/team-claude-config/marked.md"
+JSON_DEST="$TMP/team-claude-config/settings.json"
+mkdir -p "$TMP/team-claude-config"
 echo "no marker here" > "$PLAIN_SRC"
 echo "no marker here" > "$PLAIN_DEST"
 echo "header" > "$MARKED_SRC"
@@ -28,7 +28,7 @@ echo '{}' > "$JSON_DEST"
 # this test file when synced across repos.
 SHELL_MARKED_SRC="$TMP/script.sh"
 printf '#!/bin/bash\n# ''SYNC'':''LOCAL-ONLY''\necho x\n' > "$SHELL_MARKED_SRC"
-PLAIN_DEST_SH="$TMP/itsec-claude-config/dest.sh"
+PLAIN_DEST_SH="$TMP/team-claude-config/dest.sh"
 echo "x" > "$PLAIN_DEST_SH"
 
 # .json file OUTSIDE any claude-config repo (target plain /tmp).

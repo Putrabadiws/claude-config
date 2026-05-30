@@ -126,20 +126,11 @@ stern -n $NS $DEPLOY --tail=50
 kubetail $DEPLOY -n $NS
 ```
 
-## Platform-Specific
+## Service-Specific
 
-### Orion
-- Main API logs: `deployment/ib-backend-mdr`
-- Alert ingestion: `deployment/ib-insert-alert-from-event`
-- Common errors: OpenSearch connection, RabbitMQ timeouts
+Document each service's key deployments and common error signatures here. Example:
 
-### Aman
-- DNS resolver: `deployment/dns-resolver-core-golang`
-- License mgmt: `deployment/dns-license-management`
-- Common errors: Redis connection, ULID validation
-
-### Bron AI
-- AI core: `deployment/backend-aegis`
-- RAG pipeline: `deployment/backend-fates`
-- Celery workers: `deployment/backend-fates-worker`
-- Common errors: Gemini API rate limits, Qdrant connection
+### `<service>`
+- Main API logs: `deployment/<service>`
+- Worker logs: `deployment/<service>-worker`
+- Common errors: DB connection, upstream timeouts, rate limits

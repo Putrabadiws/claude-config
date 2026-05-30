@@ -34,10 +34,13 @@ esac
 
 # Determine sibling test path to tailor the message.
 SIBLING="${FILE_PATH%.sh}.test.sh"
+BASE=$(basename "$FILE_PATH")
 if [ -f "$SIBLING" ]; then
   SIBLING_STATE="EXISTS at ${SIBLING} — review whether this change needs new/updated test cases; do NOT commit source-only"
+  SM="🧪 ${BASE} · test sibling exists — update if behavior changed"
 else
   SIBLING_STATE="DOES NOT EXIST — you MUST create ${SIBLING} alongside this change"
+  SM="🧪 ${BASE} · test sibling MISSING — create $(basename "$SIBLING")"
 fi
 
 REMINDER=$(cat <<EOF
@@ -57,7 +60,8 @@ COMPAT REQUIRED: if the script uses BSD/GNU-divergent commands (date -d/-r, stat
 EOF
 )
 
-jq -n --arg msg "$REMINDER" '{
+jq -n --arg msg "$REMINDER" --arg sm "$SM" '{
+  "systemMessage": $sm,
   "hookSpecificOutput": {
     "hookEventName": "PreToolUse",
     "additionalContext": $msg

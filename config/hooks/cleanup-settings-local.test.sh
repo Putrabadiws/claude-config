@@ -67,4 +67,27 @@ else
 fi
 rm -rf "$tmp"
 
+# file present → emits 🧹 systemMessage on stdout (added in output rework)
+tmp=$(mktemp -d)
+mkdir -p "$tmp/.claude"
+echo '{"foo":"bar"}' > "$tmp/.claude/settings.local.json"
+out=$( cd "$tmp" && echo '{}' | "$HOOK" 2>/dev/null )
+rm -rf "$tmp"
+if echo "$out" | jq -e '.systemMessage' >/dev/null 2>&1 && echo "$out" | grep -q "🧹"; then
+  echo "PASS: emits 🧹 systemMessage when file removed"; PASS=$((PASS + 1))
+else
+  echo "FAIL: expected 🧹 systemMessage, got: $out"; FAIL=$((FAIL + 1))
+fi
+
+# file absent → NO output (don't claim a cleanup that didn't happen)
+tmp=$(mktemp -d)
+mkdir -p "$tmp/.claude"
+out=$( cd "$tmp" && echo '{}' | "$HOOK" 2>/dev/null )
+rm -rf "$tmp"
+if [ -z "$out" ]; then
+  echo "PASS: silent when nothing to remove"; PASS=$((PASS + 1))
+else
+  echo "FAIL: should be silent when no file, got: $out"; FAIL=$((FAIL + 1))
+fi
+
 summary

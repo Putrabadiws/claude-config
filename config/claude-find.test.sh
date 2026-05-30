@@ -62,7 +62,7 @@ rm -rf "$h"
 
 # --- Case 2 (trigger): default excludes /private/tmp cwd
 h=$(new_sandbox)
-make_jsonl "$h/.claude/projects/proj-a/normal-session.jsonl" "/Users/candra/itsec" "bootcamp claude question"
+make_jsonl "$h/.claude/projects/proj-a/normal-session.jsonl" "/Users/dev/project" "bootcamp claude question"
 make_jsonl "$h/.claude/projects/proj-b/subagent-session.jsonl" "/private/tmp/worktree-x" "bootcamp claude subagent"
 out=$(run_cf "$h" -a bootcamp claude)
 if echo "$out" | grep -q "normal-session" && ! echo "$out" | grep -q "subagent-session"; then
@@ -74,7 +74,7 @@ rm -rf "$h"
 
 # --- Case 3 (trigger): -A includes /private/tmp cwd
 h=$(new_sandbox)
-make_jsonl "$h/.claude/projects/proj-a/normal-session.jsonl" "/Users/candra/itsec" "bootcamp claude question"
+make_jsonl "$h/.claude/projects/proj-a/normal-session.jsonl" "/Users/dev/project" "bootcamp claude question"
 make_jsonl "$h/.claude/projects/proj-b/subagent-session.jsonl" "/private/tmp/worktree-x" "bootcamp claude subagent"
 out=$(run_cf "$h" -A -a bootcamp claude)
 if echo "$out" | grep -q "normal-session" && echo "$out" | grep -q "subagent-session"; then
@@ -99,7 +99,7 @@ rm -rf "$h"
 # --- Case 5 (trigger): bare /tmp cwd (no subdir) is also excluded by default
 h=$(new_sandbox)
 make_jsonl "$h/.claude/projects/proj-a/tmp-bare.jsonl" "/tmp" "bootcamp claude"
-make_jsonl "$h/.claude/projects/proj-b/normal.jsonl" "/Users/candra/itsec" "bootcamp claude"
+make_jsonl "$h/.claude/projects/proj-b/normal.jsonl" "/Users/dev/project" "bootcamp claude"
 out=$(run_cf "$h" -a bootcamp claude)
 if ! echo "$out" | grep -q "tmp-bare" && echo "$out" | grep -q "normal"; then
   echo "PASS: bare /tmp cwd excluded"; PASS=$((PASS + 1))
@@ -110,7 +110,7 @@ rm -rf "$h"
 
 # --- Case 6 (edge): no matches → "No sessions found" message
 h=$(new_sandbox)
-make_jsonl "$h/.claude/projects/proj-a/unrelated.jsonl" "/Users/candra/itsec" "completely different topic"
+make_jsonl "$h/.claude/projects/proj-a/unrelated.jsonl" "/Users/dev/project" "completely different topic"
 out=$(run_cf "$h" -a bootcamp claude)
 if echo "$out" | grep -q "No sessions found"; then
   echo "PASS: empty result → 'No sessions found' message"; PASS=$((PASS + 1))
@@ -147,7 +147,7 @@ rm -rf "$h"
 h=$(new_sandbox)
 make_jsonl "$h/.claude/projects/proj-a/tmpdir-session.jsonl" \
   "/private/var/folders/0w/p_44yxbx3_jf1xqbpk4shh380000gn/T" "bootcamp claude tmpdir"
-make_jsonl "$h/.claude/projects/proj-b/normal.jsonl" "/Users/candra/itsec" "bootcamp claude"
+make_jsonl "$h/.claude/projects/proj-b/normal.jsonl" "/Users/dev/project" "bootcamp claude"
 out=$(run_cf "$h" -a bootcamp claude)
 if ! echo "$out" | grep -q "tmpdir-session" && echo "$out" | grep -q "normal"; then
   echo "PASS: /private/var/folders/*/T cwd excluded"; PASS=$((PASS + 1))
@@ -198,7 +198,7 @@ rm -rf "$h"
 # At COLUMNS=80, First: budget is 80-14=66 chars. A 200-char prompt must be cut.
 h=$(new_sandbox)
 long_msg="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa bootcamp claude"
-make_jsonl "$h/.claude/projects/proj-a/long.jsonl" "/Users/candra/itsec" "$long_msg"
+make_jsonl "$h/.claude/projects/proj-a/long.jsonl" "/Users/dev/project" "$long_msg"
 out=$(run_cf_width "$h" 80 -a bootcamp claude)
 # Find the First: line, strip ANSI, count visible chars after the label
 first_line=$(echo "$out" | grep -a "First:" | head -1 | sed $'s/\033\\[[0-9;]*m//g')
@@ -214,7 +214,7 @@ rm -rf "$h"
 # --- Case 14 (false-positive on truncation): short content must NOT get "…" appended
 h=$(new_sandbox)
 short_msg="bootcamp claude short"
-make_jsonl "$h/.claude/projects/proj-a/short.jsonl" "/Users/candra/itsec" "$short_msg"
+make_jsonl "$h/.claude/projects/proj-a/short.jsonl" "/Users/dev/project" "$short_msg"
 out=$(run_cf_width "$h" 120 -a bootcamp claude)
 first_line=$(echo "$out" | grep -a "First:" | head -1 | sed $'s/\033\\[[0-9;]*m//g')
 if echo "$first_line" | grep -q "bootcamp claude short" && ! echo "$first_line" | grep -q "…"; then
@@ -229,7 +229,7 @@ rm -rf "$h"
 h=$(new_sandbox)
 # 150-char content (was previously capped at 120 by python)
 msg150="bootcamp claude $(printf 'x%.0s' {1..130})"
-make_jsonl "$h/.claude/projects/proj-a/wide.jsonl" "/Users/candra/itsec" "$msg150"
+make_jsonl "$h/.claude/projects/proj-a/wide.jsonl" "/Users/dev/project" "$msg150"
 out=$(run_cf_width "$h" 200 -a bootcamp claude)
 first_line=$(echo "$out" | grep -a "First:" | head -1 | sed $'s/\033\\[[0-9;]*m//g')
 # Count xs that survived. With python cap removed, ≥130 xs should appear when width allows.
@@ -243,7 +243,7 @@ rm -rf "$h"
 
 # --- Case 16 (edge): very narrow terminal (COLUMNS=40) still functions, doesn't crash
 h=$(new_sandbox)
-make_jsonl "$h/.claude/projects/proj-a/narrow.jsonl" "/Users/candra/itsec" "bootcamp claude in a narrow terminal world"
+make_jsonl "$h/.claude/projects/proj-a/narrow.jsonl" "/Users/dev/project" "bootcamp claude in a narrow terminal world"
 out=$(run_cf_width "$h" 40 -a bootcamp claude); rc=$?
 if [ "$rc" = "0" ] && echo "$out" | grep -q "narrow"; then
   echo "PASS: narrow terminal (40 cols) doesn't crash"; PASS=$((PASS + 1))
@@ -256,7 +256,7 @@ rm -rf "$h"
 h=$(new_sandbox)
 cat > "$h/.claude/projects/proj-a/with-slug.jsonl" <<EOF
 {"type":"permission-mode","permissionMode":"default","sessionId":"with-slug","slug":"my-cool-bootcamp-session"}
-{"type":"user","sessionId":"with-slug","cwd":"/Users/candra/itsec","timestamp":"2026-05-20T10:00:00Z","message":{"content":"bootcamp claude question"}}
+{"type":"user","sessionId":"with-slug","cwd":"/Users/dev/project","timestamp":"2026-05-20T10:00:00Z","message":{"content":"bootcamp claude question"}}
 EOF
 out=$(run_cf "$h" -a bootcamp claude)
 if echo "$out" | grep -q "my-cool-bootcamp-session"; then
@@ -270,7 +270,7 @@ rm -rf "$h"
 # (matches Claude Code's session picker which shows "(unnamed)" rather than
 # substituting the first prompt as title)
 h=$(new_sandbox)
-make_jsonl "$h/.claude/projects/proj-a/no-slug.jsonl" "/Users/candra/itsec" "bootcamp claude question about X"
+make_jsonl "$h/.claude/projects/proj-a/no-slug.jsonl" "/Users/dev/project" "bootcamp claude question about X"
 out=$(run_cf_width "$h" 120 -a bootcamp claude)
 header=$(echo "$out" | sed $'s/\033\\[[0-9;]*m//g' | grep -E '^[[:space:]]+#[0-9]+[[:space:]]' | head -1)
 # Header MUST contain "(unnamed)" and NOT show the user prompt as title.
@@ -287,7 +287,7 @@ rm -rf "$h"
 h=$(new_sandbox)
 cat > "$h/.claude/projects/proj-a/no-user.jsonl" <<EOF
 {"type":"permission-mode","permissionMode":"default","sessionId":"no-user"}
-{"type":"assistant","sessionId":"no-user","cwd":"/Users/candra/itsec","timestamp":"2026-05-20T10:00:00Z","message":{"content":[{"type":"text","text":"bootcamp claude reply"}]}}
+{"type":"assistant","sessionId":"no-user","cwd":"/Users/dev/project","timestamp":"2026-05-20T10:00:00Z","message":{"content":[{"type":"text","text":"bootcamp claude reply"}]}}
 EOF
 out=$(run_cf "$h" -a bootcamp claude)
 header=$(echo "$out" | sed $'s/\033\\[[0-9;]*m//g' | grep -E '^[[:space:]]+#[0-9]+[[:space:]]' | head -1)
@@ -303,7 +303,7 @@ h=$(new_sandbox)
 long_slug=$(printf 'slug-word-%.0s' {1..20})
 cat > "$h/.claude/projects/proj-a/long-slug.jsonl" <<EOF
 {"type":"permission-mode","permissionMode":"default","sessionId":"long-slug","slug":"$long_slug"}
-{"type":"user","sessionId":"long-slug","cwd":"/Users/candra/itsec","timestamp":"2026-05-20T10:00:00Z","message":{"content":"bootcamp claude"}}
+{"type":"user","sessionId":"long-slug","cwd":"/Users/dev/project","timestamp":"2026-05-20T10:00:00Z","message":{"content":"bootcamp claude"}}
 EOF
 out=$(run_cf_width "$h" 80 -a bootcamp claude)
 header=$(echo "$out" | sed $'s/\033\\[[0-9;]*m//g' | grep -E '^[[:space:]]+#[0-9]+[[:space:]]' | head -1)
@@ -316,7 +316,7 @@ rm -rf "$h"
 
 # --- Case 21a (trigger): "(unnamed)" header carries italic ANSI code (\033[3m)
 h=$(new_sandbox)
-make_jsonl "$h/.claude/projects/proj-a/no-slug.jsonl" "/Users/candra/itsec" "bootcamp claude"
+make_jsonl "$h/.claude/projects/proj-a/no-slug.jsonl" "/Users/dev/project" "bootcamp claude"
 out=$(run_cf "$h" -a bootcamp claude)
 # The header line for an unnamed session should contain both dim (\033[2m)
 # AND italic (\033[3m) ANSI codes wrapping "(unnamed)".
@@ -332,7 +332,7 @@ rm -rf "$h"
 h=$(new_sandbox)
 cat > "$h/.claude/projects/proj-a/named.jsonl" <<EOF
 {"type":"permission-mode","permissionMode":"default","sessionId":"named","slug":"real-title"}
-{"type":"user","sessionId":"named","cwd":"/Users/candra/itsec","timestamp":"2026-05-20T10:00:00Z","message":{"content":"bootcamp claude"}}
+{"type":"user","sessionId":"named","cwd":"/Users/dev/project","timestamp":"2026-05-20T10:00:00Z","message":{"content":"bootcamp claude"}}
 EOF
 out=$(run_cf "$h" -a bootcamp claude)
 # Find the header line (contains "#1") and check it does NOT have \033[3m
@@ -349,8 +349,8 @@ rm -rf "$h"
 # the variable on subsequent iterations of a loop that re-declares. Two
 # results are required to trigger the second `local` invocation.
 h=$(new_sandbox)
-make_jsonl "$h/.claude/projects/proj-a/s1.jsonl" "/Users/candra/itsec" "bootcamp claude first"
-make_jsonl "$h/.claude/projects/proj-b/s2.jsonl" "/Users/candra/itsec" "bootcamp claude second"
+make_jsonl "$h/.claude/projects/proj-a/s1.jsonl" "/Users/dev/project" "bootcamp claude first"
+make_jsonl "$h/.claude/projects/proj-b/s2.jsonl" "/Users/dev/project" "bootcamp claude second"
 out=$(run_cf "$h" -a bootcamp claude)
 if echo "$out" | grep -qE '^title=|^title_color='; then
   echo "FAIL: typeset-style leak ('title=...' line in output)"; echo "$out"; FAIL=$((FAIL + 1))

@@ -26,32 +26,39 @@ if [ -z "$STAGED" ]; then
   exit 0
 fi
 
-# Build reminder based on what's staged
+# Build reminder based on what's staged. DOC_TAGS parallels REMINDERS but holds
+# just the short doc names, for the user-facing systemMessage summary line.
 REMINDERS=""
+DOC_TAGS=""
 
 # API changes
 if echo "$STAGED" | grep -qE '(Controller|Route|Endpoint|Handler|controller|route|endpoint|handler)\.(java|py|go|ts)$'; then
   REMINDERS="${REMINDERS}\n- API changes detected → update API.md"
+  DOC_TAGS="${DOC_TAGS}API "
 fi
 
 # Database/schema changes
 if echo "$STAGED" | grep -qE '(models?|entities|schema|migrations?|changelog)'; then
   REMINDERS="${REMINDERS}\n- Schema changes detected → update DATABASE.md"
+  DOC_TAGS="${DOC_TAGS}DATABASE "
 fi
 
 # New service/component (newly added files only)
 if git diff --cached --diff-filter=A --name-only 2>/dev/null | grep -qE '(services?|components?)/[^/]+\.(java|py|go|ts)$'; then
   REMINDERS="${REMINDERS}\n- New service/component → update ARCHITECTURE.md"
+  DOC_TAGS="${DOC_TAGS}ARCHITECTURE "
 fi
 
 # Config changes
 if echo "$STAGED" | grep -qE '(application\.(properties|ya?ml)|config\.(py|ts|go)|\.env\.example)'; then
   REMINDERS="${REMINDERS}\n- Config changes detected → update CONFIGURATION.md"
+  DOC_TAGS="${DOC_TAGS}CONFIGURATION "
 fi
 
 # Deployment changes
 if echo "$STAGED" | grep -qE '(Dockerfile|docker-compose|helm|k8s|values\.ya?ml)'; then
   REMINDERS="${REMINDERS}\n- Deployment changes detected → update DEPLOYMENT.md"
+  DOC_TAGS="${DOC_TAGS}DEPLOYMENT "
 fi
 
 # If we have reminders, output them
@@ -66,9 +73,13 @@ if [ -n "$REMINDERS" ]; then
 
   if [ -n "$DOCS_PATH" ]; then
     MESSAGE="Documentation check:${REMINDERS}\n\nDocs location: ${DOCS_PATH}"
+    # Condense DOC_TAGS ("API DATABASE ") into a comma list for the user line.
+    SM_DOCS=$(echo "$DOC_TAGS" | sed 's/[[:space:]]*$//; s/[[:space:]]\{1,\}/, /g')
     jq -n \
       --arg msg "$MESSAGE" \
+      --arg sm "📝 Docs may need updating: ${SM_DOCS}" \
       '{
+        systemMessage: $sm,
         hookSpecificOutput: {
           hookEventName: "PreToolUse",
           additionalContext: $msg

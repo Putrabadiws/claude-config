@@ -245,4 +245,21 @@ fi
 rm -rf "$tmp" "$mock_bin" "$GLAB_LOG"
 unset GLAB_LOG
 
+# Test 13: no-MR fire emits the tight 🚨 systemMessage (added in output rework)
+tmp=$(mock_git_repo "https://gitlab.com/x/y.git")
+( cd "$tmp" && git checkout -q -b feature/sm 2>/dev/null || true )
+mock_bin=$(mktemp -d)
+cat > "$mock_bin/glab" <<'GLEOF'
+#!/bin/bash
+echo '[]'
+GLEOF
+chmod +x "$mock_bin/glab"
+out=$(PATH="$mock_bin:/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin" invoke_check 'git push origin feature/sm' '0' "$tmp")
+rm -rf "$tmp" "$mock_bin"
+if echo "$out" | jq -e '.systemMessage' >/dev/null 2>&1 && echo "$out" | grep -q "🚨 feature/sm pushed"; then
+  echo "PASS: emits '🚨 … pushed · no open MR' systemMessage"; PASS=$((PASS + 1))
+else
+  echo "FAIL: expected 🚨 systemMessage, got: $out"; FAIL=$((FAIL + 1))
+fi
+
 summary

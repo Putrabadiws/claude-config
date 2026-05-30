@@ -80,4 +80,19 @@ else
   echo "FAIL: should still emit JSON even without session_id"; FAIL=$((FAIL + 1))
 fi
 
+# systemMessage present + leads with "🧭 k8s:" label (added in output rework)
+tmp=$(mktemp -d)
+out=$(invoke_in_dir "$tmp" "test-$$-sm")
+rm -rf "$tmp"
+if echo "$out" | jq -e '.systemMessage' > /dev/null 2>&1; then
+  echo "PASS: emits systemMessage"; PASS=$((PASS + 1))
+else
+  echo "FAIL: missing systemMessage: $out"; FAIL=$((FAIL + 1))
+fi
+sm=$(echo "$out" | jq -r '.systemMessage' 2>/dev/null)
+case "$sm" in
+  "🧭 k8s:"*) echo "PASS: systemMessage leads with 🧭 k8s: label"; PASS=$((PASS + 1)) ;;
+  *) echo "FAIL: systemMessage should start with '🧭 k8s:', got: $sm"; FAIL=$((FAIL + 1)) ;;
+esac
+
 summary

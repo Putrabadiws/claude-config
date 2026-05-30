@@ -44,7 +44,7 @@ git commit -m "chore: update visual baselines for new dashboard layout"
 
 - Key page layouts (dashboard, detail views, forms)
 - Component states (empty, loading, error, populated)
-- Responsive breakpoints (Desktop 1920x1080, iPad Pro 11 834x1194, iPhone 13 390x844) — Orion
+- Responsive breakpoints (Desktop 1920x1080, iPad Pro 11 834x1194, iPhone 13 390x844)
 - Dark mode if supported
 
 ## When NOT to use visual regression

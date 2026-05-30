@@ -38,11 +38,14 @@ output_lint_issue() {
   local linter="$1"
   local file="$2"
   local result="$3"
+  local base; base=$(basename "$file")
   jq -n \
     --arg linter "$linter" \
     --arg file "$file" \
+    --arg base "$base" \
     --arg result "$result" \
     '{
+      systemMessage: "⚠️ \($linter): issues in \($base)",
       hookSpecificOutput: {
         hookEventName: "PostToolUse",
         additionalContext: "\($linter) issues in \($file):\n\($result)"

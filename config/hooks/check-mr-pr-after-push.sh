@@ -81,6 +81,7 @@ case "$REMOTE_URL" in
       | jq 'length // 0' 2>/dev/null)
     if [ "${MR_COUNT:-0}" = "0" ]; then
       jq -n --arg branch "$BRANCH" --arg dir "$DIR" '{
+        systemMessage: ("🚨 " + $branch + " pushed · no open MR"),
         hookSpecificOutput: {
           hookEventName: "PostToolUse",
           additionalContext: ("🚨 Branch [" + $branch + "] in " + $dir + " was pushed but has NO open merge request. Create one with `glab mr create` if this was not a draft/WIP push.")
@@ -103,6 +104,7 @@ case "$REMOTE_URL" in
       | jq 'length // 0' 2>/dev/null)
     if [ "${PR_COUNT:-0}" = "0" ]; then
       jq -n --arg branch "$BRANCH" --arg dir "$DIR" '{
+        systemMessage: ("🚨 " + $branch + " pushed · no open PR"),
         hookSpecificOutput: {
           hookEventName: "PostToolUse",
           additionalContext: ("🚨 Branch [" + $branch + "] in " + $dir + " was pushed but has NO open pull request. Create one with `gh pr create` if this was not a draft/WIP push.")

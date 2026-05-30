@@ -17,13 +17,11 @@ Action: `$0` | Service: `$1`
 
 ## Overview
 
-| Platform | Stack | Tool | Location |
-|----------|-------|------|----------|
-| Orion | Java/Spring | Liquibase | `src/main/resources/db/changelog/` |
-| Corvus | Java/Spring | Liquibase | `src/main/resources/db/changelog/` |
-| Aman | Java/Spring | Liquibase | `src/main/resources/db/changelog/` |
-| Bron AI (fates) | Python/FastAPI | Alembic | `alembic/versions/` |
-| Bron AI (Java) | Java/Spring | Liquibase | `src/main/resources/db/changelog/` |
+| Stack | Tool | Location |
+|-------|------|----------|
+| Java/Spring | Liquibase | `src/main/resources/db/changelog/` |
+| Python/FastAPI | Alembic | `alembic/versions/` |
+| Node/TypeScript | Prisma / Knex | `prisma/migrations/` or `migrations/` |
 
 ## Templates
 

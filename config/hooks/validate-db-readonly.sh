@@ -27,7 +27,7 @@ if echo "$CMD_TOKENS" | grep -qiE '\b(psql|redis-cli|mongo|mongosh)\b'; then
   IS_DB_TOOL=true
 fi
 # For curl, check the full command for DB port patterns (port is in args, not the binary name)
-if echo "$CMD_TOKENS" | grep -qiE '\bcurl\b' && echo "$COMMAND" | grep -qiE '(9200|9300|opensearch|elasticsearch)'; then
+if echo "$CMD_TOKENS" | grep -qiE '\bcurl\b' && echo "$COMMAND" | grep -qiE '(\b9200\b|\b9300\b|opensearch|elasticsearch)'; then
   IS_DB_TOOL=true
 fi
 if [ "$IS_DB_TOOL" = false ]; then
@@ -44,26 +44,26 @@ fi
 # Block SQL write operations (case-insensitive)
 # Covers: INSERT, UPDATE, DELETE, DROP, CREATE, ALTER, TRUNCATE, REPLACE, MERGE, GRANT, REVOKE
 if echo "$DB_COMMAND" | grep -qiE '\b(INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|TRUNCATE|REPLACE|MERGE|GRANT|REVOKE)\b'; then
-  echo "Blocked: SQL write operation not allowed. Use SELECT queries only." >&2
+  echo "⛔ SQL write blocked — SELECT only" >&2
   exit 2
 fi
 
 # Block Redis write commands
 # SET variants, DELETE, FLUSH, LIST/SET/HASH modifications
 if echo "$COMMAND" | grep -qiE '\b(SET|SETNX|SETEX|PSETEX|MSET|DEL|UNLINK|FLUSHDB|FLUSHALL|EXPIRE|EXPIREAT|PEXPIRE|RENAME|RENAMENX|LPUSH|RPUSH|LPOP|RPOP|LSET|LREM|SADD|SREM|SPOP|SMOVE|ZADD|ZREM|ZINCRBY|HSET|HSETNX|HMSET|HDEL|HINCRBY|INCR|DECR|INCRBY|DECRBY|APPEND)\b'; then
-  echo "Blocked: Redis write operation not allowed. Use GET/KEYS/SCAN/HGET/SMEMBERS only." >&2
+  echo "⛔ Redis write blocked — read-only (GET/KEYS/SCAN/HGET/SMEMBERS)" >&2
   exit 2
 fi
 
 # Block OpenSearch/Elasticsearch write operations
 if echo "$COMMAND" | grep -qiE '(-X\s*(PUT|POST|DELETE)|_bulk|_delete|_update|_reindex|_create)'; then
-  echo "Blocked: OpenSearch write operation not allowed. Use GET/_search/_cat only." >&2
+  echo "⛔ OpenSearch write blocked — GET/_search/_cat only" >&2
   exit 2
 fi
 
 # Block MongoDB write operations
 if echo "$COMMAND" | grep -qiE '\.(insert|update|delete|remove|drop|createIndex|dropIndex|createCollection)\s*\('; then
-  echo "Blocked: MongoDB write operation not allowed. Use find/aggregate only." >&2
+  echo "⛔ MongoDB write blocked — find/aggregate only" >&2
   exit 2
 fi
 

@@ -25,7 +25,10 @@ elif [ -n "$CWD" ]; then
 fi
 
 [ -z "$TARGET_DIR" ] && { echo '{"suppressOutput": true}'; exit 0; }
-[ ! -d "$TARGET_DIR/.git" ] && { echo '{"suppressOutput": true}'; exit 0; }
+# Accept a .git that is a directory (normal repo) OR a file (submodule / worktree
+# gitlink — git stores .git as a FILE there). -d alone wrongly skips submodules;
+# the remote-get-url check below still gates on an actual origin.
+[ ! -e "$TARGET_DIR/.git" ] && { echo '{"suppressOutput": true}'; exit 0; }
 
 REMOTE_URL=$(git -C "$TARGET_DIR" remote get-url origin 2>/dev/null || echo "")
 [ -z "$REMOTE_URL" ] && { echo '{"suppressOutput": true}'; exit 0; }
@@ -49,5 +52,16 @@ RULES=$(cat "$RULES_FILE")
 [ -z "$RULES" ] && { echo '{"suppressOutput": true}'; exit 0; }
 
 touch "$FLAG"
-RULES_JSON=$(echo "$RULES" | jq -Rs .)
-echo "{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"additionalContext\":$RULES_JSON}}"
+case "$PLATFORM" in
+  gitlab) PLATFORM_DISPLAY="GitLab" ;;
+  github) PLATFORM_DISPLAY="GitHub" ;;
+  *)      PLATFORM_DISPLAY="$PLATFORM" ;;
+esac
+# systemMessage = clean user line; additionalContext = full rules for Claude.
+jq -n --arg ctx "$RULES" --arg msg "📚 ${PLATFORM_DISPLAY} rules loaded" '{
+  systemMessage: $msg,
+  hookSpecificOutput: {
+    hookEventName: "PreToolUse",
+    additionalContext: $ctx
+  }
+}'

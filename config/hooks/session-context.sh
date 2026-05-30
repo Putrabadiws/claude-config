@@ -63,18 +63,47 @@ SESSION_ID=$(echo "$INPUT" | jq -r '.session_id // empty')
 # SYNC:LOCAL-ONLY  — per-env divergence: bangor invokes only bangor-context.sh.
 SYNTH_INPUT=$(jq -n --arg cwd "$PWD" --arg sid "$SESSION_ID" \
   '{cwd:$cwd,session_id:$sid,tool_input:{command:""}}')
+# DELEGATE_MSGS collects each delegate's user-facing systemMessage (e.g.
+# "📚 Loaded context: Bangor") so starting IN a Bangor repo shows BOTH the
+# 🧭 environment line AND the context line(s). Without capturing it here the
+# delegate's systemMessage is discarded and only 🧭 would show.
+DELEGATE_MSGS=""
 for ORG_HOOK in bangor-context.sh gitlab-github-context.sh; do
   HOOK_PATH="$HOME/.claude/hooks/$ORG_HOOK"
   [ ! -x "$HOOK_PATH" ] && continue
   ORG_OUT=$(echo "$SYNTH_INPUT" | "$HOOK_PATH" 2>/dev/null)
   ORG_CTX=$(echo "$ORG_OUT" | jq -r '.hookSpecificOutput.additionalContext // empty' 2>/dev/null)
   [ -n "$ORG_CTX" ] && CTX="${CTX}\n\n${ORG_CTX}"
+  ORG_MSG=$(echo "$ORG_OUT" | jq -r '.systemMessage // empty' 2>/dev/null)
+  [ -n "$ORG_MSG" ] && DELEGATE_MSGS="${DELEGATE_MSGS}${ORG_MSG}
+"
 done
+
+# User-facing one-liner (systemMessage) — a condensed, scannable version of the
+# Environment summary. systemMessage is the only channel that renders as an
+# intentional "…says:" line rather than a raw "hook success:" blob.
+SUMMARY="🧭 k8s:${K8S_CTX}"
+if [ -n "$GIT_REMOTE" ]; then
+  SUMMARY="${SUMMARY} · ${GIT_REMOTE}@${GIT_BRANCH}"
+else
+  SUMMARY="${SUMMARY} · ${GIT_BRANCH}"
+fi
+# Trim the " (Claude Code)" suffix for the user line only — CTX keeps raw version.
+SUMMARY="${SUMMARY} · claude $(echo "$CLAUDE_VERSION" | sed 's/ (Claude Code)$//')"
+
+# Stack each delegate's context line beneath the 🧭 line, so starting IN a
+# Bangor repo shows both (🧭 environment + 📚 context).
+FULL_MSG="$SUMMARY"
+[ -n "$DELEGATE_MSGS" ] && FULL_MSG="${SUMMARY}
+${DELEGATE_MSGS%$'\n'}"
 
 # Output JSON using jq for proper escaping
 jq -n \
   --arg ctx "$CTX" \
+  --arg sum "$FULL_MSG" \
   '{
+    suppressOutput: false,
+    systemMessage: $sum,
     hookSpecificOutput: {
       hookEventName: "SessionStart",
       additionalContext: $ctx

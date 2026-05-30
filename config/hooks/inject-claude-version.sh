@@ -87,6 +87,7 @@ elif echo "$COMMAND" | grep -q '✨ Generated with Claude Code'; then
   else
     # Wrong values or parse failure (treated as mismatch — safer)
     jq -n --arg v "$VERSION" --arg m "$MODEL" --arg av "${ATTR_VER:-?}" --arg am "${ATTR_MODEL:-?}" '{
+      "systemMessage": "🔖 Attribution mismatch — fixing",
       "hookSpecificOutput": {
         "hookEventName": "PreToolUse",
         "additionalContext": ("ATTRIBUTION MISMATCH: commit has version=" + $av + ", model=" + $am + " — real values are version=" + $v + ", model=" + $m + ". You MUST amend (or follow-up commit if already pushed) with the correct line: ✨ Generated with Claude Code (claude.ai/claude-code) " + $v + " (" + $m + ")")
