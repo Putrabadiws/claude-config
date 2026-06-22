@@ -38,3 +38,10 @@ paths:
 
 ## Imports
 - `@/` alias → `resources/js/`
+
+## Modular Structure (`resources/js/modules/`)
+For apps on the backend modular monolith (`Modules/<X>` — see `style-laravel`):
+- Group frontend per feature in `resources/js/modules/<x>/{pages,components,hooks}` + `index.ts`; backend module stays PHP-only
+- Widen the Inertia resolver to also glob `./modules/*/pages`, with a `module::page` name convention so app pages keep short names
+- Controllers render namespaced pages: `Inertia::render('product::index')`
+- Cross-feature imports go through the feature's `index.ts`; shared UI/hooks stay top-level

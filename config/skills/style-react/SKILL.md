@@ -49,6 +49,33 @@ ComponentName/
 └── index.js               # Re-export (optional)
 ```
 
+## Modular Structure (feature-first)
+
+For larger SPAs, organize by **feature** under `src/modules/` instead of
+scattering everything across global folders. Each module owns its slice of the
+app and exposes a public surface via `index.ts`.
+
+```
+src/
+├── modules/
+│   ├── product/
+│   │   ├── components/      # Feature components
+│   │   ├── hooks/           # Feature hooks (useProducts)
+│   │   ├── api/             # API calls / service hooks
+│   │   ├── store/           # State slice (Redux) — optional
+│   │   ├── types/           # Feature types
+│   │   └── index.ts         # Public surface — cross-feature imports go here only
+│   └── sales/
+├── components/              # Shared/global components only
+├── hooks/                   # Shared hooks
+├── store/                   # Root store wiring (combines module slices)
+└── lib/                     # utils
+```
+
+**Boundaries**: import another feature only through its `index.ts`, never a deep
+path (`modules/sales/internal/...`). Code shared by 2+ features graduates to
+top-level `components/` / `hooks/`; until then it stays in its owning module.
+
 ## Component Pattern
 
 ```jsx

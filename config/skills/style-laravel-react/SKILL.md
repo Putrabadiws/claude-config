@@ -66,6 +66,62 @@ app/Http/
 └── Middleware/HandleInertiaRequests.php   # shares auth/flash/ziggy with every page
 ```
 
+## Modular Structure (`resources/js/modules/`)
+
+For apps on the backend **modular monolith** (`Modules/<Domain>/` — see the
+`style-laravel` skill), group the matching frontend per feature under
+`resources/js/modules/`. The backend module stays **PHP-only**; the frontend
+lives centrally here, not co-located inside `Modules/`.
+
+```
+resources/js/
+├── pages/                      # App-level Inertia pages (dashboard, welcome, auth/*)
+├── modules/
+│   ├── product/
+│   │   ├── pages/              # Inertia pages for this feature
+│   │   │   └── index.tsx       #   ← Inertia::render('product::index')
+│   │   ├── components/         # Feature-only components
+│   │   ├── hooks/              # Feature-only hooks
+│   │   └── index.ts            # Public surface — cross-feature imports go here only
+│   └── sales/
+├── components/                 # Shared/global components (+ ui/ shadcn primitives)
+├── layouts/  hooks/  lib/  types/
+```
+
+Widen the Inertia resolver to scan both roots, with a `module::page` name
+convention so app-level pages keep their short names:
+
+```ts
+// resources/js/app.tsx
+const pages = {
+  ...import.meta.glob("./pages/**/*.tsx"),
+  ...import.meta.glob("./modules/*/pages/**/*.tsx"),
+};
+
+createInertiaApp({
+  // "product::index" → ./modules/product/pages/index.tsx
+  // "dashboard"      → ./pages/dashboard.tsx  (unchanged)
+  resolve: (name) => {
+    const path = name.includes("::")
+      ? `./modules/${name.replace("::", "/pages/")}.tsx`
+      : `./pages/${name}.tsx`;
+    return resolvePageComponent(path, pages);
+  },
+  // ...
+});
+```
+
+```php
+// Modules\Product\Controllers\ProductController — render the namespaced page
+return Inertia::render('product::index', [
+    'products' => ProductResource::collection($products),
+]);
+```
+
+**Boundaries**: a feature imports another feature only through its `index.ts`,
+never a deep path — mirrors the backend module-boundary rule. Truly shared
+UI/hooks stay in top-level `components/` / `hooks/`.
+
 ## Naming
 
 **kebab-case for every file** — components, hooks, pages, layouts. This is the starter kit's
