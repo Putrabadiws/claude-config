@@ -1,6 +1,6 @@
 ---
 name: style-laravel
-description: Laravel/PHP code style - controllers, models, requests, resources, services, validation.
+description: Laravel/PHP code style - controllers, models, requests, resources, services, actions, validation. Covers Standard and modular-monolith (Modules/) layouts.
 user-invocable: false
 ---
 
@@ -59,55 +59,94 @@ routes/
 └── api.php
 ```
 
-## Directory Structure (DDD)
+## Directory Structure (Modular Monolith)
 
-Organized by **bounded context / domain** instead of technical type — for larger apps
-with rich business logic. Follows the Spatie "Laravel beyond CRUD" `Domain` + `App` split.
+NestJS-inspired, **feature-first** layout — each business domain is a
+self-contained module under `Modules/`. Use when the app has several distinct
+domains that each own controllers, routes, models, and business logic, and you
+want clear per-module ownership and self-registered routing.
 
-Map both namespaces in `composer.json` so they autoload from `src/`:
+```
+Modules/
+├── Product/
+│   ├── Controllers/        # Thin; inject an Action, return a Resource
+│   ├── Requests/           # Form Requests (StoreProductRequest)
+│   ├── Resources/          # API Resources (ProductResource)
+│   ├── Models/             # Modules\Product\Models\Product
+│   ├── Actions/            # One use case per class (CreateProductAction)
+│   ├── Services/           # Only when coordinating multiple Actions
+│   ├── Policies/           # ProductPolicy
+│   ├── Data/               # DTOs
+│   ├── Enums/
+│   ├── Routes/             # Per-module api.php / web.php
+│   ├── Providers/          # ProductServiceProvider (registers routes/policies)
+│   └── Tests/              # Per-module feature/unit tests
+├── Sales/
+└── Inventory/
+
+database/                   # migrations/factories/seeders stay CENTRAL at root
+routes/                     # global route files (modules load their own via providers)
+```
+
+**Migrations are central** — they live in root `database/migrations`, not per
+module. Module providers do **not** call `loadMigrationsFrom`.
+
+### PSR-4 wiring (hand-rolled)
+
+No `nwidart/laravel-modules` — map the namespace yourself in `composer.json`:
 
 ```json
 "autoload": {
     "psr-4": {
-        "App\\": "src/App/",
-        "Domain\\": "src/Domain/",
-        "Support\\": "src/Support/"
+        "App\\": "app/",
+        "Modules\\": "Modules/"
     }
 }
 ```
 
-```
-src/
-├── Domain/                     # Pure business logic — no HTTP, no framework glue
-│   ├── Invoicing/              # One bounded context per folder
-│   │   ├── Actions/            # Single-purpose use cases (CreateInvoiceAction)
-│   │   ├── Models/             # Eloquent models for this domain
-│   │   ├── Data/               # DTOs (spatie/laravel-data objects)
-│   │   ├── Events/             # Domain events
-│   │   ├── Listeners/
-│   │   ├── Exceptions/         # Domain-specific exceptions
-│   │   ├── QueryBuilders/      # Custom Eloquent query builders
-│   │   ├── States/             # State machines (spatie/laravel-model-states)
-│   │   ├── Rules/              # Validation rules owned by the domain
-│   │   └── Enums/
-│   └── Ordering/               # Another bounded context
-│       └── ...
-├── App/                        # Application layer — entry points into the domain
-│   ├── Http/
-│   │   ├── Controllers/        # Thin; call Domain Actions
-│   │   ├── Requests/           # Form Requests
-│   │   ├── Resources/          # API Resources
-│   │   └── Middleware/
-│   └── Console/                # Artisan commands
-└── Support/                    # Cross-cutting helpers shared by all domains
+There is **no provider auto-discovery** — register every module provider
+explicitly in `bootstrap/providers.php` (Laravel 11+) or the `providers` array
+in `config/app.php` (≤10):
 
-database/                       # Stays at project root (migrations/factories/seeders)
-routes/                         # Stays at project root
+```php
+// bootstrap/providers.php
+return [
+    App\Providers\AppServiceProvider::class,
+    Modules\Product\Providers\ProductServiceProvider::class,
+    Modules\Sales\Providers\SalesServiceProvider::class,
+];
 ```
 
-**Dependency rule**: `App` depends on `Domain`; `Domain` never depends on `App`.
-Controllers/Requests/Resources stay in `App`; business rules live in `Domain`.
-Keep `app/` empty (or delete it) once everything moves under `src/`.
+Run `composer dump-autoload` after adding a module so the PSR-4 map picks it up.
+
+### Module ServiceProvider
+
+Each module wires its own routes and policies — the piece the Standard
+layout doesn't need:
+
+```php
+<?php
+
+declare(strict_types=1);
+
+namespace Modules\Product\Providers;
+
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\ServiceProvider;
+use Modules\Product\Models\Product;
+use Modules\Product\Policies\ProductPolicy;
+
+class ProductServiceProvider extends ServiceProvider
+{
+    public function boot(): void
+    {
+        // Per-module routes; no loadMigrationsFrom — migrations stay central.
+        $this->loadRoutesFrom(__DIR__ . '/../Routes/api.php');
+
+        Gate::policy(Product::class, ProductPolicy::class);
+    }
+}
+```
 
 ## Naming Conventions
 
@@ -396,7 +435,79 @@ it('rejects invalid email', function (): void {
 });
 ```
 
+## Modular Monolith Patterns
+
+Applies to the `Modules/` layout above. In a modular monolith, **Actions are
+the default** unit of business logic (not Services).
+
+### Actions-first
+
+One use case = one Action class with a single `execute()`. Reach for a Service
+only when you need to coordinate multiple Actions; never create a Service for
+plain CRUD.
+
+```php
+<?php
+
+declare(strict_types=1);
+
+namespace Modules\Product\Actions;
+
+use Illuminate\Support\Facades\DB;
+use Modules\Product\Models\Product;
+
+class CreateProductAction
+{
+    /** @param array<string, mixed> $data */
+    public function execute(array $data): Product
+    {
+        return DB::transaction(fn (): Product => Product::create($data));
+    }
+}
+```
+
+Controllers inject the Action and stay thin:
+
+```php
+public function store(StoreProductRequest $request, CreateProductAction $action): ProductResource
+{
+    return new ProductResource($action->execute($request->validated()));
+}
+```
+
+### Module boundaries
+
+A module must not reach into another module's Models or build queries against
+them. Cross-module work goes through the **owning module's Action/Service**, so
+each domain stays the single owner of its data.
+
+```php
+// ❌ Sales reaching directly into Inventory's internals
+$item = InventoryItem::where('product_id', $id)->first();
+$item->decrement('stock', $qty);
+
+// ✅ Sales calls Inventory's Action
+$adjustStock->execute($id, -$qty);   // Modules\Inventory\Actions\AdjustInventoryStockAction
+```
+
+### Repository pattern
+
+Don't add repositories/interfaces by default — query Eloquent directly or wrap
+it in an Action. Introduce a repository only on real need (multiple data
+sources, an external API replacing the DB, genuinely complex query reuse).
+
 ## Artisan Scaffolding
+
+There is no `module:make` (hand-rolled PSR-4). Create module files by hand or
+generate into the default location and move them into the module, fixing the
+namespace:
+
+```bash
+php artisan make:controller ProductController --api   # then move to Modules/Product/Controllers
+php artisan make:request StoreProductRequest          # then move to Modules/Product/Requests
+```
+
+For the **Standard** layout:
 
 ```bash
 php artisan make:model User -mfsc      # model + migration + factory + seeder + controller
