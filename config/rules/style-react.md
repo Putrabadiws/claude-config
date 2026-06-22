@@ -43,3 +43,8 @@ paths:
 2. Third-party (@mantine, @tabler)
 3. Internal (@/)
 4. Relative (./)
+
+## Modular Structure (feature-first)
+- Larger SPAs: organize by feature under `src/modules/<feature>/{components,hooks,api,store,types}` + `index.ts`
+- Import another feature only through its `index.ts`, never a deep path
+- Promote code to top-level `components/`/`hooks/` only once 2+ features share it
