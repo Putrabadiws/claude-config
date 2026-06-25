@@ -1,4 +1,4 @@
-# bangor-claude-config
+# claude-config
 
 Shared Claude Code configuration for the Bangor team.
 
