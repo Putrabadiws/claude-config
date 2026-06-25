@@ -1,6 +1,6 @@
 # claude-config
 
-Shared Claude Code configuration for the Bangor team.
+Shared Claude Code configuration for the team.
 
 ## What's Included
 
@@ -29,12 +29,12 @@ Shared Claude Code configuration for the Bangor team.
 
 1. Clone this repo:
    ```bash
-   git clone <repo-url> ~/bangor-claude-config
+   git clone <repo-url> ~/claude-config
    ```
 
 2. Start Claude Code in this directory and run `/init`:
    ```bash
-   cd ~/bangor-claude-config && claude
+   cd ~/claude-config && claude
    ```
    ```
    > /init
@@ -53,7 +53,7 @@ Shared Claude Code configuration for the Bangor team.
 #### 1. Clone
 
 ```bash
-git clone <repo-url> ~/bangor-claude-config
+git clone <repo-url> ~/claude-config
 ```
 
 #### 2. Copy config to ~/.claude
@@ -66,14 +66,14 @@ Back up your existing config first if you have one:
 
 # Create ~/.claude and copy shared files
 mkdir -p ~/.claude
-cp ~/bangor-claude-config/config/CLAUDE.md ~/.claude/
-cp -r ~/bangor-claude-config/config/agents ~/.claude/
-cp -r ~/bangor-claude-config/config/hooks ~/.claude/
-cp -r ~/bangor-claude-config/config/skills ~/.claude/
+cp ~/claude-config/config/CLAUDE.md ~/.claude/
+cp -r ~/claude-config/config/agents ~/.claude/
+cp -r ~/claude-config/config/hooks ~/.claude/
+cp -r ~/claude-config/config/skills ~/.claude/
 
 # Copy rules (exclude wrong OS shell file)
 mkdir -p ~/.claude/rules
-cp ~/bangor-claude-config/config/rules/*.md ~/.claude/rules/
+cp ~/claude-config/config/rules/*.md ~/.claude/rules/
 # macOS: rm ~/.claude/rules/shell-windows.md
 # Windows: rm ~/.claude/rules/shell-macos.md
 
